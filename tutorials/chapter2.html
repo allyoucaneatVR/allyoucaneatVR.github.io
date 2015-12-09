@@ -1,0 +1,60 @@
+<html>
+
+<head>
+    <script src="assets/js/VROne.min.js"></script>
+</head>
+
+<body>
+    <div style="width: 500px; height: 300px;">
+        <canvas id="vrone_canvas"></canvas>
+        <script>
+            var canvas = document.getElementById("vrone_canvas");
+            var scene = new VROne.Scene(canvas);
+            scene.setClearColor(0.2, 0.2, 0.35);
+            scene.setAmbientLight(0.6, 0.8, 0.6);
+
+            var light = new VROne.Light();
+            light.position.set(1, 0, 2);
+            light.color.red = 1.0;
+            light.color.green = 0.0;
+            light.color.blue = 1.0;
+            scene.addToScene(light);
+            
+            var light2 = new VROne.Light();
+            light2.position.set(-1, 0, 2);
+            light2.color.red = 1.0;
+            light2.color.green = 1.0;
+            light2.color.blue = 0.0;
+            scene.addToScene(light2);
+
+            var cube = new VROne.Geometry.Box(1, 1, 1);
+            cube.offset.set(-cube.a / 2.0, -cube.b / 2.0, -cube.c / 2.0);
+            cube = cube.getO3D();
+            cube.position.z = -2;
+            scene.addToScene(cube);
+
+            var counter = 0;
+            var i = 0;
+            
+            function update() {
+                counter++;
+                if (counter > 250) {
+                    i = (i+1) % 3;
+                    if (i === 0) scene.setRendererDesktop();
+                    if (i === 1) scene.setRendererVR(false);
+                    if (i === 2) scene.setRendererVR(true);
+                    counter = 0;
+                }
+                var y = (Date.now() / 2000) % Math.PI * 2.0;
+                cube.rotation.fromEulerAngles(0, y, 0);
+                VROne.requestAnimFrame(update);
+                scene.updateScene();
+                scene.drawScene();
+            }
+
+            update();
+        </script>
+    </div>
+</body>
+
+</html>

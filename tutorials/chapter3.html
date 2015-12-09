@@ -1,0 +1,60 @@
+<html>
+
+<head>
+    <script src="assets/js/VROne.min.js"></script>
+</head>
+
+<body>
+    <div style="width: 500px; height: 300px;">
+        <canvas id="vrone_canvas"></canvas>
+        <script>
+            var canvas = document.getElementById("vrone_canvas");
+            var scene = new VROne.Scene(canvas);
+            scene.setClearColor(0.2, 0.2, 0.35);
+            scene.setAmbientLight(0.9, 0.9, 0.9);
+
+            var light = new VROne.Light();
+            light.position.set(0, 1, 2);
+            scene.addToScene(light);
+            
+            //Adding objects to the scene
+            var o3Ds = new VROne.OBJLoader("assets/obj/suzanne.obj");
+            var suzanne = o3Ds["Suzanne"];
+            var plane = o3Ds["Plane"];
+            
+            suzanne.position.z = -4;
+            suzanne.useSpecularLighting = true;
+            suzanne.shininess = 10;
+            
+            scene.addToScene(suzanne);
+            scene.addToScene(plane);
+            
+            //Getting the camera manager
+            var cameraManager = scene.getCamera().getManager();
+            
+            //creating a custom camera modifier
+            var myModifier = new VROne.CameraModifier();
+            cameraManager.modifiers.push(myModifier);
+            
+            //creating a mouse/keyboard camera modifier
+            var mouseKeyboard = new VROne.MouseKeyboard(canvas, canvas);
+            cameraManager.modifiers.push(mouseKeyboard);
+            
+            
+            function update() {
+                //Check if the mouse is locked
+                if(!mouseKeyboard.isMouseLocked()){
+                    //Setting the position of the custom modifier
+                    myModifier.position.y = 1+Math.sin(Date.now()/1000)/2;
+                }
+                VROne.requestAnimFrame(update);
+                scene.updateScene();
+                scene.drawScene();
+            }
+
+            update();
+        </script>
+    </div>
+</body>
+
+</html>

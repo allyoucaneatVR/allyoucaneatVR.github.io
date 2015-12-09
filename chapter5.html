@@ -1,0 +1,565 @@
+<!DOCTYPE HTML>
+<!--
+	Escape Velocity by HTML5 UP
+	html5up.net | @n33co
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>First Steps in VROne</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<!--[if lte IE 8]><link rel="stylesheet" href="assets/css/ie8.css" /><![endif]-->
+        <script src="assets/js/VROne.min.js"></script>
+        <link rel="stylesheet" href="assets/js/styles/monokai.css">
+        <script src="assets/js/highlight.pack.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+	</head>
+	<body class="no-sidebar">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<div id="header-wrapper" class="wrapper">
+                    <div style="height: 100%; width: 100%; position: absolute;">
+                        <canvas id="title"></canvas>
+                        <script>
+                            window.onload = function(){
+                                var canvas = document.getElementById("title");
+                                var scene = new VROne.Scene(canvas);
+
+                                var light = new VROne.Light();
+                                light.position.y = 1;
+                                light.position.z = 10;
+                                scene.addToScene(light);
+                                
+                                var title = new VROne.OBJLoader("obj/title.obj")[0];
+                                title.position.z = -3;
+                                title.rotation.fromEulerAngles(-Math.PI/2.0, 0, 0);
+                                scene.addToScene(title);
+
+                                function update(){
+                                    var duration = 20;//sec
+                                    var intensity = 0.2;
+                                    var time = Date.now();
+                                    time = (time/1000)%duration;
+                                    var p = time/duration;
+                                    p = Math.abs((p*2.0)-1.0);
+                                    
+                                    var red   = intensity * p;
+                                    var green = intensity * Math.abs((((p+0.33)%1.0)*2.0)-1.0);
+                                    var blue  = intensity * Math.abs((((p+0.66)%1.0)*2.0)-1.0);
+                                    scene.setAmbientLight(red, green, blue);
+                                    VROne.requestAnimFrame(update);
+                                    scene.updateScene();
+                                    scene.drawScene();
+                                }
+
+                                update();
+                            };
+                        </script>
+                    </div>
+					<div id="header">
+
+						<!-- Logo -->
+							<div id="logo">
+								<h1><a href="index.html">VROne</a></h1>
+								<p>EASILY CREATE VR EXPERIENCES FOR THE BROWSER</p>
+							</div>
+
+						<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li class="current"><a href="index.html">Home</a></li>
+									<li class="current"><a href="download.html">Download</a></li>
+									<li>
+										<a href="chapter1.html">Guides</a>
+										<ul>
+											<li><a href="chapter1.html">1: Setting up a scene</a></li>
+											<li><a href="chapter2.html">2: Using the VR renderer</a></li>
+											<li><a href="chapter3.html">3: Using camera modifiers</a></li>
+											<li><a href="chapter4.html">4: Setting Object3D attributes</a></li>
+											<li><a href="chapter5.html">5: Using custom shaders</a></li>
+											<!--li>
+												<a href="#">Sed consequat</a>
+												<ul>
+													<li><a href="#">Lorem dolor</a></li>
+													<li><a href="#">Amet consequat</a></li>
+													<li><a href="#">Magna phasellus</a></li>
+													<li><a href="#">Etiam nisl</a></li>
+													<li><a href="#">Sed feugiat</a></li>
+												</ul>
+											</li-->
+										</ul>
+									</li>
+									<li class="current"><a href="api/">Code Reference</a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</div>
+
+			<!-- Main -->
+				<div class="wrapper style2">
+					<div class="title">BEGINNER'S GUIDE</div>
+					<div id="main" class="container">
+
+						<!-- Content -->
+							<div id="content">
+								<article class="box post">
+									<header class="style1">
+										<h2>Using custom shaders</h2>
+										<p>Unleash the full capabilities of VROne</p>
+									</header>
+                                    
+                                    
+                                    <!-- Intro -->
+                                    <div>
+                                        <div style="height: 300px; width: 50%; float: right; margin-left: 1%;">
+                                            <canvas id="chapter5"></canvas>
+                                            <script>
+                                                (function(){
+                                                    var canvas = document.getElementById("chapter5");
+                                                    var scene = new VROne.Scene(canvas);
+                                                    scene.setClearColor(0.2, 0.2, 0.35);
+
+                                                    var light = new VROne.Light();
+                                                    light.position.set(0, 1, 2);
+                                                    scene.addToScene(light);
+
+                                                    var cube = new VROne.Geometry.Box(1, 1, 1);
+                                                    cube.offset.set(-cube.a/2, -cube.b/2, -cube.c/2);
+                                                    cube = cube.getO3D();
+                                                    cube.position.z = -2;
+
+                                                    cube.shader = "shaders/example";
+                                                    var offset = [];
+                                                    for(var i=0; i < cube.vertices.length; i++){
+                                                        offset[i] = 0.1 - Math.random()/5;
+                                                    }
+                                                    cube.addShaderAttribute("aVertexOffset", 3, offset);
+
+                                                    var color = {
+                                                        red: 0.5,
+                                                        green: 0.0,
+                                                        blue: 0.1
+                                                    };
+                                                    cube.addShaderUniform("uColor", "uniform3f", color, ["red", "green", "blue"]);
+
+                                                    scene.addToScene(cube);
+
+                                                    function update() {
+                                                        cube.rotation.fromEulerAngles(0, Date.now()/1000, 0);
+                                                        color.red   = ( Math.sin(Date.now()/1000                    ) + 1)/4;
+                                                        color.green = ( Math.sin(Date.now()/1000 + (Math.PI*2*(1/3))) + 1)/4;
+                                                        color.blue  = ( Math.sin(Date.now()/1000 + (Math.PI*2*(2/3))) + 1)/4;
+
+                                                        VROne.requestAnimFrame(update);
+                                                        scene.updateScene();
+                                                        scene.drawScene();
+                                                    }
+
+                                                    update();
+                                                })();
+                                            </script>
+                                        </div>
+                                        <div>
+                                            <p>
+                                                Developing WebGL applications that perform well on mobile devices can be hard.
+                                                Especially graphical calculations can be CPU-heavy in particular. That's why running these
+                                                calculations on the GPU is generally a good idea to get the best possible performance.
+                                                VROne has a built-in way to let you run your own custom GLSL shaders on the GPU. This also
+                                                gives you many more possibilities on how your objects are rendered.
+                                            </p>
+                                            <p>
+                                                Loading up your own custom shader is really quite simple. After you've written your GLSL code,
+                                                save your vertex and fragment shader code in separate files with the vertex shader having
+                                                the file ending <i>.vert</i> and the fragment shader the ending <i>.frag</i>. 
+                                            </p>
+                                            <p>
+                                                VROne generates default shaders for all O3Ds added to the scene. If you'd like to modify a
+                                                default shader or use it as boilerplate code for your own shader,
+                                                you can log the shader to the JavaScript console. To do this just set the
+                                                object3D properties <i>.logVertexShader</i> or <i>.logFragmentShader</i> true on the respective
+                                                object. The following guide will cover how to use a custom shader on an O3D.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 1. -->
+                                    <div style="clear: both; padding-top: 2%;">
+                                    <hr/>
+                                        <div style="width: 50%; float: right; margin-left: 1%;">
+                                            <pre class="code-pre"><code class="lang-javascript">    ...
+    cube.shader = "shaders/example";
+    var offset = [];
+    for(var i=0; i &lt; cube.vertices.length; i++){
+        offset[i] = 0.1 - Math.random()/5;
+    }
+    cube.addShaderAttribute("aVertexOffset", 3, offset);
+    ...</code></pre>
+                                        </div>
+                                        <div>
+                                            <p>
+                                                You can add the shader to the respective o3D by setting its
+                                                shader property. Make sure you leave out the file ending when
+                                                setting the shader source, both fragment and vertex shader are loaded automatically.
+                                                This example loads the shader files called <i>example.vert</i> and <i>example.frag</i>.
+                                                The offset array holds the values manipulating the vertex positions of the cube.
+                                                These values will be sent to the shader as vertex attributes.
+                                                This is optional and only needed if your shader uses additional attributes.
+                                                The array is initialized in the for loop. Note that the attribute has as many values as
+                                                there are vertices in the cube. Finally the attribute is added by calling
+                                                <i>addShaderAttribute()</i>. The first argument is the name of the attribute used in your
+                                                shader code, the second one indicates how many values there are per vertex, in this example
+                                                the shader uses an attribute of type <i>vec3</i>, so there are three values. The last
+                                                argument is the array containing the values that will be sent.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 2. -->
+                                    <div style="clear: both; padding-top: 3%;">
+                                        <div style="width: 50%; float: right; margin-left: 1%;">
+                                            <pre class="code-pre"><code class="lang-javascript">    ...
+    var color = {
+        red: 0.5,
+        green: 0.0,
+        blue: 0.1
+    };
+    cube.addShaderUniform("uColor", "uniform3f", color, ["red", "green", "blue"]);
+
+    scene.addToScene(cube);
+    ...</code></pre>
+                                        </div>
+                                        <div>
+                                            <p>
+                                                Similarly to setting up custom attributes you can easily use your own uniform variables.
+                                                To send an uniform we're first creating an object with the values to be sent. Via
+                                                <i>addShaderUniform()</i> you can send the uniform values. Again, pass the name of the
+                                                attribute in your GLSL code as the first argument. The second argument indicatesthe type of
+                                                uniform function to call for the respective
+                                                uniform type. In this case we're using a <i>vec3</i> with three floats so the appropriate
+                                                function for that is <i>uniform3f</i>. Pass the object we've set up earlier as the third
+                                                argument. The fourth argument is an array which contains the object property names as strings.
+                                                These names refer to the <i>color</i> object.
+                                                Now you know how to use your own shaders and pass custom values to them.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 3. -->
+                                    <div style="clear: both; padding-top: 3%;">
+                                        <div style="width: 50%; float: right; clear: both; margin-left: 1%;">
+                                            <pre class="code-pre"><code class="javascript">...
+    &lt;script&gt;
+        var canvas = document.getElementById("vrone_canvas")
+        var scene = new VROne.Scene(canvas);
+        scene.setClearColor(0.2, 0.2, 0.35);
+
+        var light = new VROne.Light();
+        light.position.set(0, 1, 2);
+        scene.addToScene(light);
+
+        var cube = new VROne.Geometry.Box(1, 1, 1);
+        cube.offset.set(-cube.a/2, -cube.b/2, -cube.c/2);
+        cube = cube.getO3D();
+        cube.position.z = -2;
+
+        cube.shader = "shaders/example";
+        var offset = [];
+        for(var i=0; i &lt; cube.vertices.length; i++){
+            offset[i] = 0.1 - Math.random()/5;
+        }
+        cube.addShaderAttribute("aVertexOffset", 3, offset);
+
+        var color = {
+            red: 0.5,
+            green: 0.0,
+            blue: 0.1
+        };
+        cube.addShaderUniform("uColor", "uniform3f", color, ["red", "green", "blue"]);
+
+        scene.addToScene(cube);
+
+        function update() {
+            cube.rotation.fromEulerAngles(0, Date.now()/1000, 0);
+            color.red   = ( Math.sin(Date.now()/1000                    ) + 1)/4;
+            color.green = ( Math.sin(Date.now()/1000 + (Math.PI*2*(1/3))) + 1)/4;
+            color.blue  = ( Math.sin(Date.now()/1000 + (Math.PI*2*(2/3))) + 1)/4;
+
+            VROne.requestAnimFrame(update);
+            scene.updateScene();
+            scene.drawScene();
+        }
+
+        update();
+    &lt;&#x2F;script&gt;
+    ...</code></pre>
+                                        </div>
+                                        <div style="clear: left;">
+                                            <p>
+                                                <a href="download/chapter5.zip">Complete Code</a>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    
+								</article>
+							</div>
+                        <div style="clear: both;"></div>
+					</div>
+				</div>
+
+			<!-- Highlights -->
+				<div class="wrapper style3">
+					<div class="title">Other Guides</div>
+					<div id="highlights" class="container">
+						<div class="row 150%">
+                            
+							<div class="4u 12u(mobile)">
+								<section class="highlight">
+									<a href="chapter1.html" class="image featured">
+                                        <div style="height: 200px;">
+                                        <canvas id="showcase1"></canvas>
+                                        <script>
+                                            (function(){
+                                                var canvas = document.getElementById("showcase1");
+                                                var scene = new VROne.Scene(canvas);
+
+                                                var cube = new VROne.Geometry.Box(1, 1, 1);
+                                                cube.offset.set(-cube.a/2.0, -cube.b/2.0, -cube.c/2.0);
+                                                cube = cube.getO3D();
+                                                cube.position.z = -2;
+                                                scene.addToScene(cube);
+
+                                                function update(){
+                                                    var time = Date.now();
+                                                    time = (time/2000)%Math.PI*2.0;
+                                                    cube.rotation.fromEulerAngles(0, time, 0);
+
+                                                    VROne.requestAnimFrame(update);
+                                                    scene.updateScene();
+                                                    scene.drawScene();
+                                                }
+
+                                                update();
+                                            })();
+                                        </script>
+                                        </div>
+                                    </a>
+									<h3><a href="chapter1.html">Setting up a simple scene in VROne</a></h3>
+									<p>Learn how to get started with VROne.</p>
+									<ul class="actions">
+										<li><a href="chapter1.html" class="button style1">Learn More</a></li>
+									</ul>
+								</section>
+							</div>
+                            
+                            
+                            
+							<div class="4u 12u(mobile)">
+								<section class="highlight">
+									<a href="chapter2.html" class="image featured">
+                                        <div style="height: 200px;">
+                                            <h2 id="render-type" style="position: absolute; color: #FFFFFF; margin-left: 1%;">Normal</h2>
+                                            <canvas id="showcase2"></canvas>
+                                            <script>
+                                                (function(){
+                                                    var canvas = document.getElementById("showcase2");
+                                                    var scene = new VROne.Scene(canvas);
+                                                    scene.setClearColor(0.2, 0.2, 0.35);
+                                                    scene.setAmbientLight(0.6, 0.8, 0.6);
+
+                                                    var light = new VROne.Light();
+                                                    light.position.set(1, 0, 2);
+                                                    light.color.red = 1.0;
+                                                    light.color.green = 0.0;
+                                                    light.color.blue = 1.0;
+                                                    scene.addToScene(light);
+
+                                                    var light2 = new VROne.Light();
+                                                    light2.position.set(-1, 0, 2);
+                                                    light2.color.red = 1.0;
+                                                    light2.color.green = 1.0;
+                                                    light2.color.blue = 0.0;
+                                                    scene.addToScene(light2);
+
+                                                    var cube = new VROne.Geometry.Box(1, 1, 1);
+                                                    cube.offset.set(-cube.a / 2.0, -cube.b / 2.0, -cube.c / 2.0);
+                                                    cube = cube.getO3D();
+                                                    cube.position.z = -2;
+                                                    scene.addToScene(cube);
+
+                                                    var counter = 0;
+                                                    var index = 1;
+
+                                                    function update() {
+                                                        counter++;
+                                                        if (counter > 250) {
+                                                            if (index === 0){
+                                                                scene.setRendererDesktop();
+                                                                document.getElementById("render-type").innerHTML = "Desktop";
+                                                            }
+                                                            if (index === 1){
+                                                                scene.setRendererVR(false);
+                                                                document.getElementById("render-type").innerHTML = "VR";
+                                                            }
+                                                            if (index === 2){
+                                                                scene.setRendererVR(true);
+                                                                document.getElementById("render-type").innerHTML = "VR Distorted";
+                                                            }
+                                                            index++;
+                                                            if (index >= 3) index = 0;
+                                                            counter = 0;
+                                                        }
+                                                        var time = Date.now();
+                                                        time = (time / 2000) % Math.PI * 2.0;
+                                                        cube.rotation.fromEulerAngles(0, time, 0);
+                                                        VROne.requestAnimFrame(update);
+                                                        scene.updateScene();
+                                                        scene.drawScene();
+                                                    }
+
+                                                    update();
+                                                })();
+                                            </script>
+                                        </div>
+                                    </a>
+									<h3><a href="chapter2.html">Using the VR renderer</a></h3>
+									<p>Display your scene in a VR headset.</p>
+									<ul class="actions">
+										<li><a href="chapter2.html" class="button style1">Learn More</a></li>
+									</ul>
+								</section>
+							</div>
+                            
+                            
+                            
+							<div class="4u 12u(mobile)">
+								<section class="highlight">
+									<a href="chapter5.html" class="image featured">
+                                        <div style="height: 200px;">
+                                        <canvas id="showcase3"></canvas>
+                                        <script>(function(){
+                                                    var canvas = document.getElementById("showcase3");
+                                                    var scene = new VROne.Scene(canvas);
+                                                    scene.setClearColor(0.2, 0.2, 0.35);
+
+                                                    var light = new VROne.Light();
+                                                    light.position.set(0, 1, 2);
+                                                    scene.addToScene(light);
+
+                                                    var cube = new VROne.Geometry.Box(1, 1, 1);
+                                                    cube.offset.set(-cube.a/2, -cube.b/2, -cube.c/2);
+                                                    cube = cube.getO3D();
+                                                    cube.position.z = -2;
+
+                                                    cube.shader = "shaders/example";
+                                                    var offset = [];
+                                                    for(var i=0; i < cube.vertices.length; i++){
+                                                        offset[i] = 0.1 - Math.random()/5;
+                                                    }
+                                                    cube.addShaderAttribute("aVertexOffset", 3, offset);
+
+                                                    var color = {
+                                                        red: 0.5,
+                                                        green: 0.0,
+                                                        blue: 0.1
+                                                    };
+                                                    cube.addShaderUniform("uColor", "uniform3f", color, ["red", "green", "blue"]);
+
+                                                    scene.addToScene(cube);
+
+                                                    function update() {
+                                                        cube.rotation.fromEulerAngles(0, Date.now()/1000, 0);
+                                                        color.red   = ( Math.sin(Date.now()/1000                    ) + 1)/4;
+                                                        color.green = ( Math.sin(Date.now()/1000 + (Math.PI*2*(1/3))) + 1)/4;
+                                                        color.blue  = ( Math.sin(Date.now()/1000 + (Math.PI*2*(2/3))) + 1)/4;
+
+                                                        VROne.requestAnimFrame(update);
+                                                        scene.updateScene();
+                                                        scene.drawScene();
+                                                    }
+
+                                                    update();
+                                                })();
+                                        </script>
+                                        </div>
+                                    </a>
+									<h3><a href="chapter5.html">Using custom shaders</a></h3>
+									<p>Unleash the full capabilities of VROne.</p>
+									<ul class="actions">
+										<li><a href="chapter5.html" class="button style1">Learn More</a></li>
+									</ul>
+								</section>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			<!-- Footer -->
+				<div id="footer-wrapper" class="wrapper">
+					<div class="title">CONTACT INFO</div>
+					<div id="footer" class="container">
+						<div class="row 150%">
+							<div class="6u 12u(mobile)">
+
+								<!-- Contact -->
+									<section class="feature-list small">
+										<div class="row">
+											<!--div class="6u 12u(mobile)">
+												<section>
+													<h3 class="icon fa-envelope">Email</h3>
+													<p>
+														<a href="#">info@untitled.tld</a>
+													</p>
+												</section>
+											</div>
+											<div class="6u 12u(mobile)">
+												<section>
+													<h3 class="icon fa-phone">Phone</h3>
+													<p>
+														(000) 555-0000
+													</p>
+												</section>
+											</div-->
+											<div class="6u 12u(mobile)">
+												<section>
+													<h3 class="icon fa-twitter">Twitter</h3>
+													<p>
+                                                        <a href="http://twitter.com/timkonieczny">Tim Konieczny</a>
+                                                        <br>
+                                                        <a href="http://twitter.com/PhelicksJot">Felix Janus</a>
+													</p>
+												</section>
+											</div>
+										</div>
+									</section>
+
+							</div>
+						</div>
+						<hr />
+					</div>
+					<div id="copyright">
+						<ul>
+							<li>&copy; VROne.</li><li>Web Design: <a href="http://html5up.net">HTML5 UP</a></li>
+						</ul>
+					</div>
+				</div>
+
+		</div>
+
+		<!-- Scripts -->
+
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/skel-viewport.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>

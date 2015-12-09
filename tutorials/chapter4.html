@@ -1,0 +1,63 @@
+<html>
+
+<head>
+    <script src="assets/js/VROne.min.js"></script>
+</head>
+
+<body>
+    <div style="width: 500px; height: 300px;">
+        <canvas id="vrone_canvas"></canvas>
+        <script>
+            var canvas = document.getElementById("vrone_canvas");
+            var scene = new VROne.Scene(canvas);
+            scene.setClearColor(0.2, 0.2, 0.35);
+
+            var light = new VROne.Light();
+            light.position.set(0, 1, 2);
+            scene.addToScene(light);
+            
+            var cube = new VROne.OBJLoader("assets/obj/cube.obj");
+            cube = cube[0];
+            cube.position.set(1, 0, -2);
+            cube.scale.set(0.9, 0.9, 0.9);
+            cube.imageSrc = "assets/obj/textures/cube2.png";
+            cube.transparent = true;
+            cube.twoFaceTransparency = true;
+            
+            var axis = new VROne.Vector3(1, 1, 0);
+            cube.onUpdate = function(){
+                var r = (Date.now() / 2000) % Math.PI * 2.0;
+                cube.rotation.fromAxisAngle(axis, -r);
+            };
+            scene.addToScene(cube);
+            
+            var cube2 = new VROne.OBJLoader("assets/obj/cube.obj");
+            cube2 = cube2[0];
+            cube2.position.set(-1, 0, -2);
+            cube2.scale.set(0.9, 0.9, 0.9);
+            cube2.useFragmentLighting = true;
+            cube2.useSpecularLighting = true;
+            cube2.shininess = 1.5;
+            cube2.imageSrc = "assets/obj/textures/cube.png";
+            cube2.specularMap = "assets/obj/textures/cube.png";
+            cube2.normalMap = "assets/obj/textures/cube_normal.png";
+            
+            var axis = new VROne.Vector3(1, 1, 0);
+            cube2.onUpdate = function(){
+                var r = (Date.now() / 2000) % Math.PI * 2.0;
+                cube2.rotation.fromAxisAngle(axis, -r);
+            };
+            scene.addToScene(cube2);
+            
+            function update() {
+                VROne.requestAnimFrame(update);
+                scene.updateScene();
+                scene.drawScene();
+            }
+
+            update();
+        </script>
+    </div>
+</body>
+
+</html>

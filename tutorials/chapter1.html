@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <script src="assets/js/VROne.min.js"></script>
+    </head>
+    <body>
+        <div  style="width: 500px; height: 300px;">
+            <canvas id="vrone_canvas"></canvas>
+            <script>
+                //Create a new VROne Scene for the vrone_canvas
+                var scene = new VROne.Scene(document.getElementById("vrone_canvas"));
+                
+                //Create a Geometry.Box
+                var cube = new VROne.Geometry.Box(1, 1, 1);
+                //Set the origin of the box to its center
+                cube.offset.set(-cube.a/2.0, -cube.b/2.0, -cube.c/2.0);
+                //Convert Geometry.Box to an O3D
+                cube = cube.getO3D();
+                //Set position -2 on z-axis
+                cube.position.z = -2;
+                //Add the cube to the scene
+                scene.addToScene(cube);
+
+                function update(){
+                    //Cube rotation
+                    var y = (Date.now()/2000)%Math.PI*2.0;
+                    cube.rotation.fromEulerAngles(0, y, 0);
+                    
+                    //Scene update and draw
+                    VROne.requestAnimFrame(update);
+                    scene.updateScene();
+                    scene.drawScene();
+                }
+
+                update();
+            </script>
+        </div>
+    </body>
+</html>
