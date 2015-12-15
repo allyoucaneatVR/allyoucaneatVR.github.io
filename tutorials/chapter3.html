@@ -1,24 +1,24 @@
 <html>
 
 <head>
-    <script src="assets/js/VROne.min.js"></script>
+    <script src="assets/js/AyceVR.min.js"></script>
 </head>
 
 <body>
     <div style="width: 500px; height: 300px;">
-        <canvas id="vrone_canvas"></canvas>
+        <canvas id="ayce_canvas"></canvas>
         <script>
-            var canvas = document.getElementById("vrone_canvas");
-            var scene = new VROne.Scene(canvas);
+            var canvas = document.getElementById("ayce_canvas");
+            var scene = new Ayce.Scene(canvas);
             scene.setClearColor(0.2, 0.2, 0.35);
             scene.setAmbientLight(0.9, 0.9, 0.9);
 
-            var light = new VROne.Light();
+            var light = new Ayce.Light();
             light.position.set(0, 1, 2);
             scene.addToScene(light);
             
             //Adding objects to the scene
-            var o3Ds = new VROne.OBJLoader("assets/obj/suzanne.obj");
+            var o3Ds = new Ayce.OBJLoader("assets/obj/suzanne.obj");
             var suzanne = o3Ds["Suzanne"];
             var plane = o3Ds["Plane"];
             
@@ -33,11 +33,11 @@
             var cameraManager = scene.getCamera().getManager();
             
             //creating a custom camera modifier
-            var myModifier = new VROne.CameraModifier();
+            var myModifier = new Ayce.CameraModifier();
             cameraManager.modifiers.push(myModifier);
             
             //creating a mouse/keyboard camera modifier
-            var mouseKeyboard = new VROne.MouseKeyboard(canvas, canvas);
+            var mouseKeyboard = new Ayce.MouseKeyboard(canvas, canvas);
             cameraManager.modifiers.push(mouseKeyboard);
             
             
@@ -47,7 +47,7 @@
                     //Setting the position of the custom modifier
                     myModifier.position.y = 1+Math.sin(Date.now()/1000)/2;
                 }
-                VROne.requestAnimFrame(update);
+                Ayce.requestAnimFrame(update);
                 scene.updateScene();
                 scene.drawScene();
             }

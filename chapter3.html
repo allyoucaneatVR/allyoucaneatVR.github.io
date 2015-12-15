@@ -6,7 +6,7 @@
 -->
 <html>
 	<head>
-		<title>First Steps in VROne</title>
+		<title>First Steps in ayceVR</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
@@ -44,7 +44,7 @@
                                         <div>
                                             <p>
                                             In this guide you'll learn how to position the camera in your scene. This is
-                                            one of the more advanced parts of setting up VROne because the position and
+                                            one of the more advanced parts of setting up ayceVR because the position and
                                             orientation of the camera can be altered by multiple inputs. For example you
                                             could set up a HMD to look around and use mouse and keyboard to
                                             move.
@@ -70,7 +70,7 @@
                                             <pre class="code-pre"><code class="lang-javascript">
     var cameraManager = scene.getCamera().getManager();
 
-    var myModifier = new VROne.CameraModifier();
+    var myModifier = new Ayce.CameraModifier();
     cameraManager.modifiers.push(myModifier);
                                             </code></pre>
                                         </div>
@@ -83,8 +83,8 @@
                                                 The manager combines the input data of all added devices into one value each
                                                 for camera position and rotation.
                                                 <br>
-                                                A <i>VROne.DeviceConfig</i> is an object which stores positional and rotational attributes.
-                                                In the example we’re going to create an empty <i>VROne.DeviceConfig</i> object
+                                                A <i>Ayce.DeviceConfig</i> is an object which stores positional and rotational attributes.
+                                                In the example we’re going to create an empty <i>Ayce.DeviceConfig</i> object
                                                 and add it to the camera manager by pushing it into the devices array of the camera
                                                 manager. Later on we will update
                                                 the <i>myConfig</i> object so that the camera moves up and down.
@@ -100,14 +100,14 @@
                                             <pre class="code-pre"><code class="lang-javascript">
     var cameraManager = scene.getCamera().getManager();
     // ...
-    var mouseKeyboard = new VROne.MouseKeyboard(canvas, canvas);
+    var mouseKeyboard = new Ayce.MouseKeyboard(canvas, canvas);
     cameraManager.modifiers.push(mouseKeyboard);
                                                 </code></pre>
                                         </div>
                                         <div>
                                             <p>
-                                                This is done by creating a <i>VROne.MouseKeyboard(canvas, clickElement)
-                                                </i> object. This is a camera modifier preset which is included in VROne.
+                                                This is done by creating a <i>Ayce.MouseKeyboard(canvas, clickElement)
+                                                </i> object. This is a camera modifier preset which is included in ayceVR.
                                                 The constructor of <i>MouseKeyboard</i> takes two arguments. The first one is the
                                                 canvas we’re rendering to and the second one is the
                                                 HTML-Element which the user clicks on to lock the cursor for mouse control.
@@ -135,7 +135,7 @@
                                                 <br>
                                                 That’s all you need to do to change the camera position and orientation. Now you 
                                                 also know how to add multiple input devices like HMD input and game controllers.
-                                                If you want to add a modifier VROne doesn't provide a preset for, you can
+                                                If you want to add a modifier ayceVR doesn't provide a preset for, you can
                                                 look at the source code of the default <i>DeviceConfig</i>
                                                 <a href="api/cameraControllers_deviceConfigs_DeviceConfig.js.html">here</a> and code your own.
                                             </p>
@@ -148,17 +148,17 @@
                                             <pre class="code-pre"><code class="javascript">
     ...
     &lt;script&gt;
-        var canvas = document.getElementById("vrone_canvas");
-        var scene = new VROne.Scene(canvas);
+        var canvas = document.getElementById("ayce_canvas");
+        var scene = new Ayce.Scene(canvas);
         scene.setClearColor(0.2, 0.2, 0.35);
         scene.setAmbientLight(0.9, 0.9, 0.9);
 
-        var light = new VROne.Light();
+        var light = new Ayce.Light();
         light.position.set(0, 1, 2);
         scene.addToScene(light);
 
         //Adding objects to the scene
-        var o3Ds = new VROne.OBJLoader("assets/obj/suzanne.obj");
+        var o3Ds = new Ayce.OBJLoader("assets/obj/suzanne.obj");
         var suzanne = o3Ds["Suzanne"];
         var plane = o3Ds["Plane"];
 
@@ -173,11 +173,11 @@
         var cameraManager = scene.getCamera().getManager();
 
         //creating a custom camera modifier
-        var myModifier = new VROne.CameraModifier();
+        var myModifier = new Ayce.CameraModifier();
         cameraManager.modifiers.push(myModifier);
 
         //creating a mouse/keyboard camera modifier
-        var mouseKeyboard = new VROne.MouseKeyboard(canvas, canvas);
+        var mouseKeyboard = new Ayce.MouseKeyboard(canvas, canvas);
         cameraManager.modifiers.push(mouseKeyboard);
 
 
@@ -187,7 +187,7 @@
         //Setting the position of the custom modifier
         myModifier.position.y = 1+Math.sin(Date.now()/1000)/2;
         }
-        VROne.requestAnimFrame(update);
+        Ayce.requestAnimFrame(update);
         scene.updateScene();
         scene.drawScene();
         }

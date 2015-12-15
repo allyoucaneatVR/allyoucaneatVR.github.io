@@ -1,33 +1,33 @@
 <html>
 
 <head>
-    <script src="assets/js/VROne.min.js"></script>
+    <script src="assets/js/AyceVR.min.js"></script>
 </head>
 
 <body>
     <div style="width: 500px; height: 300px;">
-        <canvas id="vrone_canvas"></canvas>
+        <canvas id="ayce_canvas"></canvas>
         <script>
-            var canvas = document.getElementById("vrone_canvas");
-            var scene = new VROne.Scene(canvas);
+            var canvas = document.getElementById("ayce_canvas");
+            var scene = new Ayce.Scene(canvas);
             scene.setClearColor(0.2, 0.2, 0.35);
             scene.setAmbientLight(0.6, 0.8, 0.6);
 
-            var light = new VROne.Light();
+            var light = new Ayce.Light();
             light.position.set(1, 0, 2);
             light.color.red = 1.0;
             light.color.green = 0.0;
             light.color.blue = 1.0;
             scene.addToScene(light);
             
-            var light2 = new VROne.Light();
+            var light2 = new Ayce.Light();
             light2.position.set(-1, 0, 2);
             light2.color.red = 1.0;
             light2.color.green = 1.0;
             light2.color.blue = 0.0;
             scene.addToScene(light2);
 
-            var cube = new VROne.Geometry.Box(1, 1, 1);
+            var cube = new Ayce.Geometry.Box(1, 1, 1);
             cube.offset.set(-cube.a / 2.0, -cube.b / 2.0, -cube.c / 2.0);
             cube = cube.getO3D();
             cube.position.z = -2;
@@ -47,7 +47,7 @@
                 }
                 var y = (Date.now() / 2000) % Math.PI * 2.0;
                 cube.rotation.fromEulerAngles(0, y, 0);
-                VROne.requestAnimFrame(update);
+                Ayce.requestAnimFrame(update);
                 scene.updateScene();
                 scene.drawScene();
             }

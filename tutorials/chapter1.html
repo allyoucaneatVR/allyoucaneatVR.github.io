@@ -1,16 +1,16 @@
 <html>
     <head>
-        <script src="assets/js/VROne.min.js"></script>
+        <script src="assets/js/AyceVR.min.js"></script>
     </head>
     <body>
         <div  style="width: 500px; height: 300px;">
-            <canvas id="vrone_canvas"></canvas>
+            <canvas id="ayce_canvas"></canvas>
             <script>
-                //Create a new VROne Scene for the vrone_canvas
-                var scene = new VROne.Scene(document.getElementById("vrone_canvas"));
+                //Create a new ayceVR Scene for the ayce_canvas
+                var scene = new Ayce.Scene(document.getElementById("ayce_canvas"));
                 
                 //Create a Geometry.Box
-                var cube = new VROne.Geometry.Box(1, 1, 1);
+                var cube = new Ayce.Geometry.Box(1, 1, 1);
                 //Set the origin of the box to its center
                 cube.offset.set(-cube.a/2.0, -cube.b/2.0, -cube.c/2.0);
                 //Convert Geometry.Box to an O3D
@@ -26,7 +26,7 @@
                     cube.rotation.fromEulerAngles(0, y, 0);
                     
                     //Scene update and draw
-                    VROne.requestAnimFrame(update);
+                    Ayce.requestAnimFrame(update);
                     scene.updateScene();
                     scene.drawScene();
                 }

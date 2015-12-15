@@ -6,7 +6,7 @@
 -->
 <html>
 	<head>
-		<title>First Steps in VROne</title>
+		<title>First Steps in ayceVR</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
@@ -59,7 +59,7 @@
                                     <div style="clear: both; padding-top: 2%;">
                                     <hr/>
                                         <div style="width: 50%; float: right; margin-left: 1%;">
-                                            <pre class="code-pre"><code class="lang-javascript">    var cube = new VROne.OBJLoader("assets/obj/cube.obj");
+                                            <pre class="code-pre"><code class="lang-javascript">    var cube = new Ayce.OBJLoader("assets/obj/cube.obj");
     cube = cube[0];
     cube.position.set(1, 0, -2);
     cube.scale.set(0.9, 0.9, 0.9);
@@ -67,7 +67,7 @@
     cube.transparent = true;
     cube.twoFaceTransparency = true;
 
-    var axis = new VROne.Vector3(1, 1, 0);
+    var axis = new Ayce.Vector3(1, 1, 0);
     cube.onUpdate = function(){
         var r = (Date.now() / 2000) % Math.PI * 2.0;
         cube.rotation.fromAxisAngle(axis, -r);
@@ -90,7 +90,7 @@
                                     <!-- 2. -->
                                     <div style="clear: both; padding-top: 3%;">
                                         <div style="width: 50%; float: right; margin-left: 1%;">
-                                            <pre class="code-pre"><code class="lang-javascript">    var cube2 = new VROne.OBJLoader("assets/obj/cube.obj");
+                                            <pre class="code-pre"><code class="lang-javascript">    var cube2 = new Ayce.OBJLoader("assets/obj/cube.obj");
     cube2 = cube2[0];
     cube2.position.set(-1, 0, -2);
     cube2.scale.set(0.9, 0.9, 0.9);
@@ -100,7 +100,7 @@
     cube2.imageSrc = "assets/obj/textures/cube.png";
     cube2.normalMap = "assets/obj/textures/cube_normal.png";
 
-    var axis = new VROne.Vector3(1, 1, 0);
+    var axis = new Ayce.Vector3(1, 1, 0);
     cube2.onUpdate = function(){
         var r = (Date.now() / 2000) % Math.PI * 2.0;
         cube2.rotation.fromAxisAngle(axis, -r);
@@ -129,15 +129,15 @@
                                         <div style="width: 50%; float: right; clear: both; margin-left: 1%;">
                                             <pre class="code-pre"><code class="javascript">...
     &lt;script&gt;
-        var canvas = document.getElementById("vrone_canvas");
-        var scene = new VROne.Scene(canvas);
+        var canvas = document.getElementById("ayce_canvas");
+        var scene = new Ayce.Scene(canvas);
         scene.setClearColor(0.2, 0.2, 0.35);
 
-        var light = new VROne.Light();
+        var light = new Ayce.Light();
         light.position.set(0, 1, 2);
         scene.addToScene(light);
 
-        var cube = new VROne.OBJLoader("assets/obj/cube.obj");
+        var cube = new Ayce.OBJLoader("assets/obj/cube.obj");
         cube = cube[0];
         cube.position.set(1, 0, -2);
         cube.scale.set(0.9, 0.9, 0.9);
@@ -145,14 +145,14 @@
         cube.transparent = true;
         cube.twoFaceTransparency = true;
 
-        var axis = new VROne.Vector3(1, 1, 0);
+        var axis = new Ayce.Vector3(1, 1, 0);
         cube.onUpdate = function(){
             var r = (Date.now() / 2000) % Math.PI * 2.0;
             cube.rotation.fromAxisAngle(axis, -r);
         };
         scene.addToScene(cube);
 
-        var cube2 = new VROne.OBJLoader("assets/obj/cube.obj");
+        var cube2 = new Ayce.OBJLoader("assets/obj/cube.obj");
         cube2 = cube2[0];
         cube2.position.set(-1, 0, -2);
         cube2.scale.set(0.9, 0.9, 0.9);
@@ -162,7 +162,7 @@
         cube2.imageSrc = "assets/obj/textures/cube.png";
         cube2.normalMap = "assets/obj/textures/cube_normal.png";
 
-        var axis = new VROne.Vector3(1, 1, 0);
+        var axis = new Ayce.Vector3(1, 1, 0);
         cube2.onUpdate = function(){
             var r = (Date.now() / 2000) % Math.PI * 2.0;
             cube2.rotation.fromAxisAngle(axis, -r);
@@ -170,7 +170,7 @@
         scene.addToScene(cube2);
 
         function update() {
-            VROne.requestAnimFrame(update);
+            Ayce.requestAnimFrame(update);
             scene.updateScene();
             scene.drawScene();
         }

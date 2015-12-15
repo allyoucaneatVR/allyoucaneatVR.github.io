@@ -38,34 +38,36 @@
                                             <canvas id="chapter1"></canvas>
                                         </div>
                                         <div>
-                                            To get started with VROne let's begin by setting up a simple scene which will work in VR headsets and on the desktop.
+                                            To get started with ayceVR let's begin by setting up a simple scene which will work in VR headsets and on the desktop.
                                             We'll create a spinning cube that is rendered onto an HTML canvas element.
                                             On the right you can see what the finished scene will look like.
-                                            You can grab the latest version of VROne <a href="download.html">here</a>.
+                                            You can grab the latest version of ayceVR <a href="download.html">here</a>.
                                         </div>
                                     </div>
                                     <div style="clear: both; padding-top: 2%;">
                                     <hr/>
                                         <div style="width: 50%; float: right; margin-left: 1%;">
-                                            <pre class="code-pre"><code class="lang-html">&lt;html&gt;
-            &lt;head&gt;
-                &lt;script src=&quot;VROne.min.js&quot;&gt;&lt;&#x2F;script&gt;
-            &lt;&#x2F;head&gt;
+                                            <pre class="code-pre"><code class="lang-html">  &lt;html&gt;
+                                            
+        &lt;head&gt;
+            &lt;script src=&quot;AyceVR.min.js&quot;&gt;&lt;&#x2F;script&gt;
+        &lt;&#x2F;head&gt;
 
-            &lt;body&gt;
-                &lt;div  style=&quot;width: 500px; height: 300px;&quot;&gt;
-                    &lt;canvas id=&quot;vrone_canvas&quot;&gt;&lt;&#x2F;canvas&gt;
-                    &lt;script&gt;...&lt;&#x2F;script&gt;
-                &lt;&#x2F;div&gt;
-            &lt;&#x2F;body&gt;
-        &lt;&#x2F;html&gt;</code></pre>
+        &lt;body&gt;
+            &lt;div  style=&quot;width: 500px; height: 300px;&quot;&gt;
+                &lt;canvas id=&quot;ayce_canvas&quot;&gt;&lt;&#x2F;canvas&gt;
+                &lt;script&gt;...&lt;&#x2F;script&gt;
+            &lt;&#x2F;div&gt;
+        &lt;&#x2F;body&gt;
+        
+    &lt;&#x2F;html&gt;</code></pre>
                                         </div>
                                         <div>
                                             <p>
-                                            First let's set up a the HTML page including the VROne canvas.
+                                            First let's set up a the HTML page including the ayce canvas.
                                             </p>
-                                            All we're doing here is adding the canvas tags and a reference to the VROne library.
-                                            After VROne is initialized the canvas will automatically resize to fit its parent.
+                                            All we're doing here is adding the canvas tags and a reference to the ayceVR library.
+                                            After ayceVR is initialized the canvas will automatically resize to fit its parent.
                                             <br>
                                             In the next step we'll add some JavaScript code to create our scene.
                                         </div>
@@ -74,9 +76,9 @@
                                         <div style="width: 50%; float: right; clear: both; margin-left: 1%;">
                                             <pre class="code-pre"><code class="javascript">...
     &lt;script&gt;
-        var scene = new VROne.Scene(document.getElementById("vrone_canvas"));
+        var scene = new Ayce.Scene(document.getElementById("ayce_canvas"));
 
-        var cube = new VROne.Geometry.Box(1, 1, 1);
+        var cube = new Ayce.Geometry.Box(1, 1, 1);
         cube.offset.set(-cube.a/2.0, -cube.b/2.0, -cube.c/2.0);
         cube = cube.getO3D();
         cube.position.z = -2;
@@ -86,7 +88,7 @@
             var y = (Date.now()/2000)%Math.PI*2.0;
             cube.rotation.fromEulerAngles(0, y, 0);
 
-            VROne.requestAnimFrame(update);
+            Ayce.requestAnimFrame(update);
             scene.updateScene();
             scene.drawScene();
         }
@@ -113,21 +115,21 @@
                                              <p>
                                                 Time to add some movement and draw the scene. We'll start by creating
                                                 an update function. In the first two lines we're setting the rotation of the cube. The <i>cube.rotation</i> object holds the
-                                                 orientation in form of a <i>VROne.Quaternion</i>. The rotation angle is set by calling the <i>.fromEulerAngles(x, y, z)</i> function.
-                                                <!--How to work with <i>VROne.Quaternion</i> objects is further explained in chapter ??(TODO).-->
+                                                 orientation in form of a <i>Ayce.Quaternion</i>. The rotation angle is set by calling the <i>.fromEulerAngles(x, y, z)</i> function.
+                                                <!--How to work with <i>Ayce.Quaternion</i> objects is further explained in chapter ??(TODO).-->
                                              </p>
                                              <p>
-                                                <i>VROne.requestAnimFrame(function)</i> creates the animation loop. It takes a function as an argument which is called once the Browser is
+                                                <i>Ayce.requestAnimFrame(function)</i> creates the animation loop. It takes a function as an argument which is called once the Browser is
                                                 ready to render a new frame. We want the scene to be updated continuously so we're passing <i>update()</i> to this function.
-                                                 It is recommended to use this function for updating your Object3Ds, especially when you're making use of the WebVR functions in VROne.
+                                                 It is recommended to use this function for updating your Object3Ds, especially when you're making use of the WebVR functions in ayceVR.
                                                 <br>
-                                                Finally we're calling <i>.updateScene()</i> and <i>.drawScene()</i> to submit all changes to VROne and render the scene.
+                                                Finally we're calling <i>.updateScene()</i> and <i>.drawScene()</i> to submit all changes to ayceVR and render the scene.
                                             </p>
                                             <p>
                                                 You have completed the first guide! Now you have a basic scene you can use as the base for your project.
-                                                In the next guide we'll add VR functionality and look at the various render methods VROne provides.
+                                                In the next guide we'll add VR functionality and look at the various render methods ayceVR provides.
                                                 We'll also add some light.
-                                                That's it for guide one of our VROne beginners' guide. You can download the sample code <a href="download/chapter1.zip">here</a>.
+                                                That's it for guide one of our ayceVR beginners' guide. You can download the sample code <a href="download/chapter1.zip">here</a>.
                                             </p>
                                         </div>
                                     </div>
