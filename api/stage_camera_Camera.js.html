@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stage/camera/Camera.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/code.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/sidenav.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stage/camera/Camera.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * lsint browser: true
+ */
+
+/**
+ * Creates new camera object
+ * @param {Ayce.CameraManager} cameraManager
+ * @constructor
+ */
+Ayce.Camera = function (cameraManager) {
+    var scope = this;
+    this.useVR = false;
+    var isFullscreen = false;
+
+    var position = new Ayce.Vector3();     //local position
+    var rotation = new Ayce.Quaternion();
+
+    var viewMatrixPool = new Ayce.Matrix4();
+    var viewMatrix = new Ayce.Matrix4();
+    var viewMatrixLeft = new Ayce.Matrix4();
+    var viewMatrixRight = new Ayce.Matrix4();
+
+    var perspectiveMatrix = null;
+    var perspectiveMatrixLeft = null;
+    var perspectiveMatrixRight = null;
+
+    this.fieldOfView = 60;
+    this.nearPlane = 0.1;
+    this.farPlane = 200.0;
+
+    this.width = 1;
+    this.height = 1;
+
+    this.isOrtho = false;
+
+    var forwardVector = new Ayce.Vector3();
+
+    /**
+     * Updates camera
+     */
+    this.update = function(){
+        //update cameraController
+        cameraManager.update();
+        
+        //update camera position and orientation from cameraController
+        position = cameraManager.getGlobalPosition();
+        rotation = cameraManager.getGlobalRotation().getConjugate();
+        
+        calculateViewMatrix();
+    };
+
+    /**
+     * Updates projection matrix
+     */
+    this.updateProjectionMatrix = function (){
+        var aspectRatio = this.width/this.height;
+        if(cameraManager &amp;&amp; cameraManager.isInputVR() &amp;&amp; cameraManager.cameraProperties.eyeFOVL){
+            perspectiveMatrixLeft = Ayce.Matrix4.makeVRPerspective(cameraManager.cameraProperties.eyeFOVL, this.nearPlane, this.farPlane);
+            perspectiveMatrixRight = Ayce.Matrix4.makeVRPerspective(cameraManager.cameraProperties.eyeFOVR, this.nearPlane, this.farPlane);
+        }else{
+            if(!this.isOrtho) {
+                perspectiveMatrix = Ayce.Matrix4.makePerspective(this.fieldOfView, aspectRatio, this.nearPlane, this.farPlane);
+            }else{
+                perspectiveMatrix = Ayce.Matrix4.makeOrthoPerspective(-1.0, 1.0, 1.0, -1.0, 0.5, 1.5);
+            }
+        }
+    };
+
+    /**
+     * Sets canvas to full screen
+     * @param {Boolean} boolean
+     */
+    this.setFullscreen = function (boolean, canvas) {
+        if ( isFullscreen === boolean ) return;
+        isFullscreen = boolean;
+        
+        //Exit Fullscreen
+        if(!boolean){
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if (document.msExitFullscreen) {
+              document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+              document.webkitExitFullscreen();
+            }
+            return;
+        }
+ 
+        var vr = {};
+        if ( cameraManager.cameraProperties.vrDevice !== undefined ){
+            vr.vrDisplay = cameraManager.cameraProperties.vrDevice;
+            vr.vrTimewarp = true;
+        }
+        
+        if (canvas.requestFullscreen) {
+          canvas.requestFullscreen(vr);
+        } else if (canvas.msRequestFullscreen) {
+          canvas.msRequestFullscreen(vr);
+        } else if (canvas.mozRequestFullScreen) {
+          canvas.mozRequestFullScreen(vr);
+        } else if (canvas.webkitRequestFullscreen) {
+          canvas.webkitRequestFullscreen(vr);
+        }
+    };
+
+    /**
+     * Calculates view matrices for both eyes
+     */
+    var calculateViewMatrix = function (){
+        if(scope.useVR){
+            var eyeL = cameraManager.cameraProperties.eyeTranslationL;
+            var eyeR = cameraManager.cameraProperties.eyeTranslationR;
+            
+            //Left View Matrix
+            viewMatrixLeft.identity();
+            viewMatrixLeft.applyTranslation(-position.x, -position.y, -position.z);
+            rotation.toRotationMatrix(viewMatrixPool);
+            viewMatrixLeft.apply(viewMatrixPool);
+            viewMatrixLeft.applyTranslation(-eyeL, 0, 0);
+            
+            //Right View Matrix
+            viewMatrixRight.identity();
+            viewMatrixRight.applyTranslation(-position.x, -position.y, -position.z);
+            rotation.toRotationMatrix(viewMatrixPool);
+            viewMatrixRight.apply(viewMatrixPool);
+            viewMatrixRight.applyTranslation(-eyeR, 0, 0);
+        } else{
+            viewMatrix.identity();
+            viewMatrix.applyTranslation(-position.x, -position.y, -position.z);
+            rotation.toRotationMatrix(viewMatrixPool);
+            viewMatrix.apply(viewMatrixPool);
+        }
+    };
+
+    /**
+     * Returns camera controller
+     * @return {Ayce.CameraManager} cameraController
+     */
+    this.getManager = function(){
+        return cameraManager;
+    };
+
+    /**
+     * Returns view matrix for respective eye
+     * @return {Ayce.Matrix4} viewMatrix
+     */
+    this.getViewMatrix = function(eye){
+        if(eye === "left"){
+            return viewMatrixLeft;
+        }
+        else if(eye === "right"){
+            return viewMatrixRight;
+        }
+        else{
+            return viewMatrix;
+        }
+    };
+
+    /**
+     * Returns perspective matrix for respective eye
+     * @param {String} eye
+     * @return {Ayce.Matrix4} perspectiveMatrix
+     */
+    this.getPerspectiveMatrix = function(eye){
+        if(eye === "left" &amp;&amp; perspectiveMatrixLeft !== null){
+            return perspectiveMatrixLeft;
+        }
+        else if(eye === "right" &amp;&amp; perspectiveMatrixRight !== null){
+            return perspectiveMatrixRight;
+        }
+        else{
+            return perspectiveMatrix;
+        }
+    };
+
+    /**
+     * Returns x eye distance from center for respective eye
+     * @param {String} eye
+     * @return {Number} distance
+     */
+    this.getEyeTranslation = function(eye){
+        if(eye === "left"){
+            return cameraManager.cameraProperties.eyeTranslationL;
+        }
+        else if(eye === "right"){
+            return cameraManager.cameraProperties.eyeTranslationR;
+        }
+        else{
+            return null;
+        }
+    };
+
+    /**
+     * Returns camera forvard vector
+     * @return {Ayce.Vector3} forwardVector
+     */
+    this.getForwardVector = function(){
+        if(scope.useVR){
+            forwardVector.x = -viewMatrixLeft.data[2];
+            forwardVector.y = -viewMatrixLeft.data[6];
+            forwardVector.z = -viewMatrixLeft.data[10];
+            return forwardVector;
+        }else {
+            forwardVector.x = -viewMatrix.data[2];
+            forwardVector.y = -viewMatrix.data[6];
+            forwardVector.z = -viewMatrix.data[10];
+            return forwardVector;
+        }
+    };
+    
+    this.isFullscreen = function(){
+        return isFullscreen;
+    };
+};
+
+Ayce.Camera.prototype = {
+
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><div class='coll_folder' onclick="collapse(document.querySelector('#l_s'))">&gt; Stage</div><div class='sub_fol' id='l_s' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_sba'))">&gt; Buffer</div><div class='sub_fol' id='l_sba' style='display: none;'><div><a href="Ayce.Buffer.html">Buffer</a></div><div><a href="Ayce.BufferMulti.html">BufferMulti</a></div><div><a href="Ayce.Shader.html">Shader</a></div><div><a href="Ayce.ShaderGenerator.html">ShaderGenerator</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sca'))">&gt; Camera</div><div class='sub_fol' id='l_sca' style='display: none;'><div><a href="Ayce.Camera.html">Camera</a></div><div><a href="Ayce.CameraManager.html">CameraManager</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_scca'))">&gt; CameraModifiers</div><div class='sub_fol' id='l_scca' style='display: none;'><div><a href="Ayce.CameraModifier.html">CameraModifier</a></div><div><a href="Ayce.Cardboard.html">Cardboard</a></div><div><a href="Ayce.Gamepad.html">Gamepad</a></div><div><a href="Ayce.MouseKeyboard.html">MouseKeyboard</a></div><div><a href="Ayce.WebVR.html">WebVR</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sra'))">&gt; Renderer</div><div class='sub_fol' id='l_sra' style='display: none;'><div><a href="Ayce.Renderer.html">Renderer</a></div><div><a href="Ayce.VRRenderer.html">VRRenderer</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ssa'))">&gt; Sound</div><div class='sub_fol' id='l_ssa' style='display: none;'><div><a href="Ayce.Sound.html">Sound</a></div></div><div><div><a href="Ayce.Light.html">Light</a></div><div><a href="Ayce.LightContainer.html">LightContainer</a></div><div><a href="Ayce.Scene.html">Scene</a></div><div><a href="Ayce.Timer.html">Timer</a></div><div><a href="Ayce.XMLLoader.html">XMLLoader</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_o'))">&gt; Objects</div><div class='sub_fol' id='l_o' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_ola'))">&gt; Loader</div><div class='sub_fol' id='l_ola' style='display: none;'><div><a href="Ayce.OBJLoader.html">OBJLoader</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ota'))">&gt; Types</div><div class='sub_fol' id='l_ota' style='display: none;'><div><a href="Ayce.Particle.html">Particle</a></div><div><a href="Ayce.ParticleSystem.html">ParticleSystem</a></div><div><a href="Ayce.Skybox.html">Skybox</a></div><div><a href="Ayce.VRSquare.html">VRSquare</a></div></div><div><div><a href="Ayce.Object3D.html">Object3D</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ia'))">&gt; InputHandlers</div><div class='sub_fol' id='l_ia' style='display: none;'><div><a href="Ayce.GamepadHandler.html">GamepadHandler</a></div><div><a href="Ayce.HMDHandler.html">HMDHandler</a></div><div><a href="Ayce.KeyboardHandler.html">KeyboardHandler</a></div><div><a href="Ayce.MouseHandler.html">MouseHandler</a></div><div><a href="Ayce.SensorsHandler.html">SensorsHandler</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ma'))">&gt; Math</div><div class='sub_fol' id='l_ma' style='display: none;'><div><a href="Ayce.Geometry.html">Geometry</a></div><div><a href="Ayce.Geometry.Box.html">Box</a></div><div><a href="Ayce.Geometry.Icosahedron.html">Icosahedron</a></div><div><a href="Ayce.Geometry.Plane.html">Plane</a></div><div><a href="Ayce.Geometry.Sphere.html">Sphere</a></div><div><a href="Ayce.Matrix3.html">Matrix3</a></div><div><a href="Ayce.Matrix4.html">Matrix4</a></div><div><a href="Ayce.Quaternion.html">Quaternion</a></div><div><a href="Ayce.Vector2.html">Vector2</a></div><div><a href="Ayce.Vector3.html">Vector3</a></div></div>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Dec 15 2015 21:25:42 GMT+0100 (Mitteleuropäische Zeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

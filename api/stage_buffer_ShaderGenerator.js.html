@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stage/buffer/ShaderGenerator.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/code.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/sidenav.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stage/buffer/ShaderGenerator.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Generates shader from given values
+ * @class
+ * @constructor
+ */
+Ayce.ShaderGenerator = function () {
+
+    this.lightsCount = 4;
+    this.texturesCount = 1;
+    this.useNormals = false;
+    this.useVertexLighting = false;
+    this.useFragmentLighting = false;
+    this.useSpecularLighting = false;
+    this.useTexture = false;
+    this.useColor = false;
+    this.useSpecularMap = false;
+    this.useNormalMap = false;
+    this.isParticleSystem = false;
+
+//    var useLightingArray = true;//Boolean(this.lightsCount > 1);
+    var useTextureArray = false;
+
+    this.vertexShader = "";
+    this.fragmentShader = "";
+
+    /**
+     * Assembles shader according to given variable values
+     */
+    this.init = function(){
+        if (!this.useTexture) {
+            this.useSpecularMap = false;
+            this.useNormalMap = false;
+        }
+        useTextureArray = Boolean(this.texturesCount > 1);
+
+        this.vertexShader +=
+            "attribute vec3 aVertexPosition;";
+
+        if(this.useColor){
+            this.vertexShader +=
+                "attribute vec4 aVertexColor;";
+        }
+
+        if(this.useTexture){
+            this.vertexShader +=
+                "attribute vec2 aTextureCoord;";
+        }
+
+        if (this.useNormals) {
+            this.vertexShader +=
+                "attribute vec3 aVertexNormal;";
+        }
+
+        if(this.isParticleSystem) {
+            this.vertexShader +=
+                "attribute vec3 aGeometryPosition;" +
+                "attribute vec3 aVertexVelocity;" +
+                "attribute vec3 aVertexRotation;" +
+                "attribute float aLifetime;" +
+                "attribute float aGravity;" +
+                "attribute float aGravityExponent;";
+        }
+
+        if (this.useTexture &amp;&amp; useTextureArray) {
+            this.vertexShader +=
+                "attribute float aTextureIndex;";
+        }
+
+        this.vertexShader +=
+            "uniform mat4 uMVMatrix;" +
+            "uniform mat4 uPMatrix;";
+
+        if(this.isParticleSystem) {
+            this.vertexShader +=
+                "uniform float uTime;";
+
+        }
+
+        if (this.useNormals) {
+            this.vertexShader +=
+                "uniform mat3 uNMatrix;";
+        }
+        if (this.useVertexLighting) {
+            this.vertexShader +=
+                "uniform vec3 uAmbientColor;" +
+                "uniform vec3 uPointLightingLocations[" + this.lightsCount + "];" +
+                "uniform vec3 uPointLightingColors[" + this.lightsCount + "];" +
+                "uniform float uLightIndex;";
+
+            if(this.useSpecularLighting){
+                this.vertexShader +=
+                "uniform float uShininess;";
+            }
+
+            if(this.useSpecularLighting){
+                this.vertexShader +=
+                "uniform vec3 uSpecularColors[" + this.lightsCount + "];";
+            }
+
+        }
+
+        if(this.useColor){
+            this.vertexShader +=
+                "varying vec4 vColor;";
+        }
+
+        if(this.useTexture) {
+            this.vertexShader +=
+                "varying vec2 vTextureCoord;";
+        }
+
+        if (this.useVertexLighting) {
+            this.vertexShader +=
+                "varying vec3 vLightWeighting;";
+        } else if (this.useFragmentLighting) {
+            this.vertexShader +=
+                "varying vec3 vTransformedNormal;" +
+                "varying vec4 vPosition;";
+        }
+
+        if (this.useTexture) {
+            if (useTextureArray) {
+                this.vertexShader +=
+                    "varying float vTextureIndex;";
+            }
+        }
+
+        this.vertexShader +=
+            "void main(void) {";
+        if(this.isParticleSystem){
+            this.vertexShader +=
+                "float factor;" +
+                "if(aLifetime==0.0){" +
+                "factor = uTime;" +
+                "}else{" +
+                "factor = mod(uTime, aLifetime);" +
+                "}" +
+                "vec3 distance = aGeometryPosition - aVertexPosition;" +
+                "float xAngle = aVertexRotation.x*factor;" +
+                "float yAngle = aVertexRotation.y*factor;" +
+                "float zAngle = aVertexRotation.z*factor;" +
+                "mat4 xRotation = mat4(" +
+                "1.0,	 		 0.0,			 0.0,			 0.0," +
+                "0.0,			 cos(xAngle),	 sin(xAngle),	 0.0," +
+                "0.0,			-sin(xAngle),	 cos(xAngle),	 0.0," +
+                "0.0,	 		 0.0,			 0.0,			 1.0" +
+                ");" +
+                "mat4 yRotation = mat4(" +
+                "cos(yAngle),	 0.0,			-sin(yAngle),	 0.0," +
+                "0.0,			 1.0,	 		 0.0,			 0.0," +
+                "sin(yAngle),	 0.0,	 		 cos(yAngle),	 0.0," +
+                "0.0,			 0.0,	 		 0.0,			 1.0" +
+                ");" +
+                "mat4 zRotation = mat4(" +
+                "cos(zAngle),	 sin(zAngle),	 0.0,			 0.0," +
+                "-sin(zAngle),	 cos(zAngle),	 0.0,			 0.0," +
+                "0.0,			 0.0,			 1.0,			 0.0," +
+                "0.0,			 0.0,			 0.0,			 1.0" +
+                ");" +
+                "vec4 position = vec4(aGeometryPosition, 1.0)*xRotation*yRotation*zRotation;" +
+                "position = position-vec4(distance, 0.0);" +
+                "vec3 velocity = aVertexVelocity+vec3(0.0, aGravity*pow(factor, aGravityExponent),0.0);" +
+                "position = uMVMatrix * vec4(position.xyz+velocity*factor, 1.0);";
+
+        }else {
+            if (!this.useFragmentLighting) { // only fragment lighting requires different code here
+                this.vertexShader +=
+                    "vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);";
+            } else if (this.useFragmentLighting) {
+                this.vertexShader +=
+                    "vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);" +
+                    "vec4 position = vPosition;";
+            }
+        }
+
+        this.vertexShader +=
+            "gl_Position = uPMatrix * position;";
+
+        if (this.useTexture &amp;&amp; useTextureArray) {
+            this.vertexShader +=
+                "vTextureIndex = aTextureIndex;";
+        }
+
+        if (this.useTexture) {
+            this.vertexShader +=
+                "vTextureCoord = aTextureCoord;";
+        }
+
+        if (this.useColor) {
+            this.vertexShader +=
+                "vColor = aVertexColor;";
+        }
+
+        if (this.useVertexLighting) {
+            this.vertexShader +=
+                "vLightWeighting = uAmbientColor;";
+            if(this.isParticleSystem) {
+                this.vertexShader +=
+                    "vec3 transformedNormal = uNMatrix * (vec4(aVertexNormal, 1.0) * xRotation * yRotation * zRotation).xyz;";
+            }else{
+                this.vertexShader +=
+                    "vec3 transformedNormal = uNMatrix * aVertexNormal;";
+            }
+            this.vertexShader +=
+                "vec3 normal = normalize(transformedNormal);" +
+                "vec3 eyeDirection = normalize(-position.xyz);" +
+                this.getVertexLightingWeightCalcArrayVertex(this.lightsCount, this.useSpecularLighting);
+        } else if (this.useFragmentLighting) {
+            if(this.isParticleSystem){
+                this.vertexShader +=
+                    "vTransformedNormal = uNMatrix * (vec4(aVertexNormal, 1.0) * xRotation * yRotation * zRotation).xyz;";
+            }else {
+                this.vertexShader +=
+                    "vTransformedNormal = uNMatrix * aVertexNormal;";
+            }
+        }
+
+        this.vertexShader +=
+            "}";
+///////////////////////////////////////////////////////////////////////////////////////
+
+        this.fragmentShader +=
+            "precision mediump float;";
+
+        if (this.useVertexLighting) {
+            this.fragmentShader +=
+                "varying vec3 vLightWeighting;";
+        } else if (this.useFragmentLighting) {
+            this.fragmentShader +=
+                "varying vec3 vTransformedNormal;" +
+                "varying vec4 vPosition;" +
+                "uniform vec3 uAmbientColor;" +
+                "uniform vec3 uPointLightingLocations[" + this.lightsCount + "];" +
+                "uniform vec3 uPointLightingColors[" + this.lightsCount + "];" +
+                "uniform float uLightIndex;";
+
+            if(this.useSpecularLighting){
+                this.fragmentShader +=
+                    "uniform float uShininess;";
+            }
+
+            if(this.useSpecularLighting){
+                this.fragmentShader +=
+                    "uniform vec3 uSpecularColors[" + this.lightsCount + "];";
+            }
+        }
+
+        if (this.useColor) {
+            this.fragmentShader +=
+                "varying vec4 vColor;";
+        }
+
+        if (this.useTexture) {
+            this.fragmentShader +=
+                "varying vec2 vTextureCoord;";
+            if (useTextureArray) {
+                this.fragmentShader +=
+                "varying float vTextureIndex;" +
+                "uniform sampler2D uSampler[" + this.texturesCount + "];";
+            }
+            else {
+                this.fragmentShader +=
+                "uniform sampler2D uSampler;";
+            }
+        }
+        if (this.useSpecularMap) {
+            this.fragmentShader +=
+                "uniform sampler2D uSpecularMapSampler;";
+        }
+
+        if (this.useNormalMap) {
+            this.fragmentShader +=
+                "uniform sampler2D uNormalMapSampler;";
+        }
+
+        this.fragmentShader +=
+            "void main(void) {" +
+            "vec4 fragmentColor;";
+
+        if (this.useFragmentLighting) {
+            this.fragmentShader +=
+                "vec3 lightWeighting = uAmbientColor;" +
+                "vec3 normal = normalize(vTransformedNormal);" +
+                "vec3 eyeDirection = normalize(-vPosition.xyz);" +
+                this.getFragmentLightingWeightCalcArrayVertex(this.lightsCount, this.useSpecularMap, this.useNormalMap, this.useSpecularLighting);
+        }
+
+        if (this.useTexture &amp;&amp; useTextureArray) {
+            this.fragmentShader +=
+                "if (vTextureCoord.x > -0.5 &amp;&amp; vTextureCoord.y > -0.5) {" +
+                "vec4 tex = vec4(0.0);" +
+                "float i = vTextureIndex;" +
+                this.getTextureCalcArray(this.texturesCount) +
+                "fragmentColor = tex;" +
+                "} else {";
+            if (this.useColor) {
+                this.fragmentShader +=
+                    "fragmentColor = vColor;";
+            }
+            else {
+                this.fragmentShader +=
+                    "fragmentColor = vec4(0.5, 0.5, 0.5, 1.0);";
+            }
+            this.fragmentShader +=
+                "}";
+        }
+        else if (this.useTexture) {
+            this.fragmentShader +=
+                "fragmentColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));";
+        }
+        else if (this.useColor) {
+            this.fragmentShader +=
+                "fragmentColor = vColor;";
+        }
+        else {
+            this.fragmentShader +=
+                "fragmentColor = vec4(0.5, 0.5, 0.5, 1.0);";
+        }
+
+        if (this.useVertexLighting) {
+            this.fragmentShader +=
+                "gl_FragColor = vec4(fragmentColor.rgb * vLightWeighting, fragmentColor.a);";
+        } else if (this.useFragmentLighting) {
+            this.fragmentShader +=
+                "gl_FragColor = vec4(fragmentColor.rgb * lightWeighting, fragmentColor.a);";
+        } else {
+            this.fragmentShader +=
+                "gl_FragColor = fragmentColor;";
+        }
+        this.fragmentShader += "}";
+    };
+};
+
+Ayce.ShaderGenerator.prototype = {
+    /**
+     * Returns shader code for lighting calculation per vertex
+     * @param {Number} lightsCount
+     * @return {String} string
+     */
+    getVertexLightingWeightCalcArrayVertex: function(lightsCount, useSpecularLighting){
+        var string = "";
+        for(var i=0; i &lt; lightsCount; i++){
+            string +=
+                "if(uLightIndex-"+(i+1)+".0>-0.01){" +
+                "vec3 lightDirection = normalize(uPointLightingLocations["+i+"] - position.xyz);" +
+                "vec3 reflectionDirection = reflect(-lightDirection, normal);" +
+                "float diffuseLightWeighting = max(dot(normalize(transformedNormal), lightDirection), 0.0);";
+
+            if(useSpecularLighting) {
+                string +=
+                    "float specularLightWeighting = pow(max(dot(reflectionDirection, eyeDirection), 0.0), uShininess);" +
+                    "vLightWeighting += uPointLightingColors[" + i + "] * diffuseLightWeighting + uSpecularColors[" + i + "] * specularLightWeighting;";
+            }else{
+                string +=
+                    "vLightWeighting += uPointLightingColors[" + i + "] * diffuseLightWeighting;";
+            }
+            string+=
+                "}";
+        }
+        return string;
+    },
+    /**
+     * Returns shader code for lighting calculation per fragment
+     * @param {Number} lightsCount
+     * @param {Boolean} useSpecularMap
+     * @param {Boolean} useNormalMap
+     * @param {Boolean} useSpecularLighting
+     * @return {String} string
+     */
+    getFragmentLightingWeightCalcArrayVertex: function(lightsCount, useSpecularMap, useNormalMap, useSpecularLighting){
+        var string = "";
+        for(var i=0; i &lt; lightsCount; i++){
+            string += "" +
+                "if(uLightIndex-"+(i+1)+".0>-0.01){" +
+                "vec3 lightDirection = normalize(uPointLightingLocations["+i+"] - vPosition.xyz);" +
+                "vec3 reflectionDirection = reflect(-lightDirection, normal);";
+            if(useSpecularMap){
+                string +=
+                    "float shininess = texture2D(uSpecularMapSampler, 255.0-vec2(vTextureCoord.s, vTextureCoord.t)).r * 255.0 * uShininess;" +
+                    "float specularLightWeighting = pow(max(dot(reflectionDirection, eyeDirection), 0.0), shininess);";
+            }else {
+                if(useSpecularLighting) {
+                    string +=
+                        "float specularLightWeighting = pow(max(dot(reflectionDirection, eyeDirection), 0.0), uShininess);";
+                }
+            }
+
+            if(useNormalMap){
+                string+=
+                    "vec3 normalMap = texture2D(uNormalMapSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb*2.0-1.0;" +
+                    "float diffuseLightWeighting = max(dot(normalize(normalMap), lightDirection), 0.0);"
+            }else{
+                string+=
+                    "float diffuseLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);"
+            }
+
+            if(useSpecularLighting) {
+                string +=
+                    "lightWeighting += uPointLightingColors[" + i + "] * diffuseLightWeighting + uSpecularColors[" + i + "] * specularLightWeighting;";
+            }else{
+                string +=
+                    "lightWeighting += uPointLightingColors[" + i + "] * diffuseLightWeighting;";
+            }
+            string+=
+                "}";
+        }
+        return string;
+    },
+    /**
+     * Returns shader code for handling multiple shaders
+     * @param {Number} textureCount
+     * @return {String} string
+     */
+    getTextureCalcArray: function(textureCount){
+        var string = "";
+        for(var i=0; i&lt;textureCount; i++){
+            if(i !== 0) string += "else ";
+            string +=
+                "if(i-"+i+".0 &lt; 0.01){" +
+                "tex = texture2D(uSampler["+i+"], vec2(vTextureCoord.s, vTextureCoord.t));" +
+                "}";
+        }
+        return string;
+    }
+
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><div class='coll_folder' onclick="collapse(document.querySelector('#l_s'))">&gt; Stage</div><div class='sub_fol' id='l_s' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_sba'))">&gt; Buffer</div><div class='sub_fol' id='l_sba' style='display: none;'><div><a href="Ayce.Buffer.html">Buffer</a></div><div><a href="Ayce.BufferMulti.html">BufferMulti</a></div><div><a href="Ayce.Shader.html">Shader</a></div><div><a href="Ayce.ShaderGenerator.html">ShaderGenerator</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sca'))">&gt; Camera</div><div class='sub_fol' id='l_sca' style='display: none;'><div><a href="Ayce.Camera.html">Camera</a></div><div><a href="Ayce.CameraManager.html">CameraManager</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_scca'))">&gt; CameraModifiers</div><div class='sub_fol' id='l_scca' style='display: none;'><div><a href="Ayce.CameraModifier.html">CameraModifier</a></div><div><a href="Ayce.Cardboard.html">Cardboard</a></div><div><a href="Ayce.Gamepad.html">Gamepad</a></div><div><a href="Ayce.MouseKeyboard.html">MouseKeyboard</a></div><div><a href="Ayce.WebVR.html">WebVR</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sra'))">&gt; Renderer</div><div class='sub_fol' id='l_sra' style='display: none;'><div><a href="Ayce.Renderer.html">Renderer</a></div><div><a href="Ayce.VRRenderer.html">VRRenderer</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ssa'))">&gt; Sound</div><div class='sub_fol' id='l_ssa' style='display: none;'><div><a href="Ayce.Sound.html">Sound</a></div></div><div><div><a href="Ayce.Light.html">Light</a></div><div><a href="Ayce.LightContainer.html">LightContainer</a></div><div><a href="Ayce.Scene.html">Scene</a></div><div><a href="Ayce.Timer.html">Timer</a></div><div><a href="Ayce.XMLLoader.html">XMLLoader</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_o'))">&gt; Objects</div><div class='sub_fol' id='l_o' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_ola'))">&gt; Loader</div><div class='sub_fol' id='l_ola' style='display: none;'><div><a href="Ayce.OBJLoader.html">OBJLoader</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ota'))">&gt; Types</div><div class='sub_fol' id='l_ota' style='display: none;'><div><a href="Ayce.Particle.html">Particle</a></div><div><a href="Ayce.ParticleSystem.html">ParticleSystem</a></div><div><a href="Ayce.Skybox.html">Skybox</a></div><div><a href="Ayce.VRSquare.html">VRSquare</a></div></div><div><div><a href="Ayce.Object3D.html">Object3D</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ia'))">&gt; InputHandlers</div><div class='sub_fol' id='l_ia' style='display: none;'><div><a href="Ayce.GamepadHandler.html">GamepadHandler</a></div><div><a href="Ayce.HMDHandler.html">HMDHandler</a></div><div><a href="Ayce.KeyboardHandler.html">KeyboardHandler</a></div><div><a href="Ayce.MouseHandler.html">MouseHandler</a></div><div><a href="Ayce.SensorsHandler.html">SensorsHandler</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ma'))">&gt; Math</div><div class='sub_fol' id='l_ma' style='display: none;'><div><a href="Ayce.Geometry.html">Geometry</a></div><div><a href="Ayce.Geometry.Box.html">Box</a></div><div><a href="Ayce.Geometry.Icosahedron.html">Icosahedron</a></div><div><a href="Ayce.Geometry.Plane.html">Plane</a></div><div><a href="Ayce.Geometry.Sphere.html">Sphere</a></div><div><a href="Ayce.Matrix3.html">Matrix3</a></div><div><a href="Ayce.Matrix4.html">Matrix4</a></div><div><a href="Ayce.Quaternion.html">Quaternion</a></div><div><a href="Ayce.Vector2.html">Vector2</a></div><div><a href="Ayce.Vector3.html">Vector3</a></div></div>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Dec 15 2015 21:25:43 GMT+0100 (Mitteleuropäische Zeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

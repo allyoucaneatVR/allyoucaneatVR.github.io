@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stage/buffer/BufferMulti.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/code.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/sidenav.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stage/buffer/BufferMulti.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Creates buffer and sets up shaders for an object3D
+ * @param {Object} gl
+ * @param {Ayce.Object3D} object3D
+ * @param {Ayce.LightContainer} lightContainer
+ * @class
+ * @constructor
+ */
+Ayce.BufferMulti = function (gl, object3D, lightContainer) {
+    if (!object3D instanceof Ayce.Object3D) throw "Can't create buffers for " + object3D;
+
+    var modelViewMatrix = new Ayce.Matrix4();
+    modelViewMatrix.transposeUniform = false;
+    //VR 
+    var leftMatrix = new Ayce.Matrix4();
+    var rightMatrix = new Ayce.Matrix4();
+    var leftNormalMatrix = new Ayce.Matrix3();
+    var rightNormalMatrix = new Ayce.Matrix3();
+    var leftPerspektive = null;
+    var rightPerspektive = null;
+
+
+    var VALUES_PER_POSITION = 3;
+    var VALUES_PER_NORMAL = 3;
+    var VALUES_PER_TEXTURE_COORD = 2;
+    var VALUES_PER_TEXTURE_INDEX = 1;
+    var VALUES_PER_COLOR = 4;
+
+    var useLighting = Boolean(object3D.normals) &amp;&amp; lightContainer.lightsCount > 0;
+    var useNormals = Boolean(object3D.normals) &amp;&amp; (useLighting || object3D.shader);
+    var textureCount = Array.isArray(object3D.imageSrc) ? object3D.imageSrc.length : 1;
+    var useWireframe = object3D.isWireframe;
+    this.transparent = object3D.transparent;
+    var isParticleSystem = Boolean(object3D.geometries &amp;&amp; object3D.velocities &amp;&amp; object3D.rotationAngles &amp;&amp; object3D.lifetimes &amp;&amp; object3D.gravities &amp;&amp; object3D.gravityExps);
+
+    //Shader Attributes
+    //[attributeName, valueLength, array]
+    var attributes = [];
+    attributes.push(["aVertexPosition", VALUES_PER_POSITION, object3D.vertices]);
+    if(object3D.textureCoords &amp;&amp; object3D.imageSrc)  attributes.push(["aTextureCoord", VALUES_PER_TEXTURE_COORD, object3D.textureCoords]);
+    if(object3D.textureCoords &amp;&amp; object3D.imageSrc &amp;&amp; object3D.textureIndices &amp;&amp; textureCount > 1) attributes.push(["aTextureIndex", VALUES_PER_TEXTURE_INDEX, object3D.textureIndices]);
+    if(object3D.colors)attributes.push(["aVertexColor", VALUES_PER_COLOR, object3D.colors]);
+    if(useNormals)attributes.push(["aVertexNormal", VALUES_PER_NORMAL, object3D.normals]);
+    if(object3D.shaderAttributes)Array.prototype.push.apply(attributes, object3D.shaderAttributes);
+    
+    //Shader Uniforms
+    var pMatrixUniform = {
+        transposeUniform: false,
+        data: []
+    };
+    var timeObject = {
+        time: 0,
+        startTime: Date.now()
+    };
+
+    var uniformValues = {
+        useTexture: Boolean(object3D.textureCoords &amp;&amp; object3D.imageSrc),
+        useLighting: useLighting,
+        useMultiTex: Boolean(object3D.textureIndices),
+        normalMatrix: new Ayce.Matrix3(),
+        useSpecularMap: Boolean(object3D.specularMap),
+        useNormalMap: Boolean(object3D.normalMap)
+    };
+
+    var uniforms = [];
+    //[uniformName, uniformType, valueObject, uniformArguments]
+    uniforms.push(["uPMatrix", "uniformMatrix4fv", pMatrixUniform, ["transposeUniform", "data"]]);
+    uniforms.push(["uMVMatrix", "uniformMatrix4fv", modelViewMatrix, ["transposeUniform", "data"]]);
+    if(useNormals){  
+        uniformValues.normalMatrix.transposeUniform = false;
+        uniforms.push(["uNMatrix", "uniformMatrix3fv", uniformValues.normalMatrix, ["transposeUniform", "data"]]);
+    }
+    if(useLighting){
+        uniforms.push(["uAmbientColor", "uniform3f", lightContainer.ambientLight, ["red", "green", "blue"]]);
+
+        uniforms.push(["uLightIndex", "uniform1f", lightContainer, ["lightsCount"]]);
+        uniforms.push(["uPointLightingLocations", "uniform3fv", lightContainer, ["locationsArray"]]);
+        uniforms.push(["uPointLightingColors", "uniform3fv", lightContainer, ["colorsArray"]]);
+        uniforms.push(["uSpecularColors", "uniform3fv", lightContainer, ["specColorsArray"]]);
+
+        uniforms.push(["uShininess", "uniform1f", object3D, ["shininess"]]);
+    }
+    if(isParticleSystem){
+        uniforms.push(["uTime", "uniform1f", timeObject, ["time"]]);
+    }
+    if(object3D.shaderUniforms)Array.prototype.push.apply(uniforms, object3D.shaderUniforms);
+
+
+    //Load Shader
+    var shaderVert = null;
+    var shaderFrag = null;
+    var shaderID = "";
+
+    if(object3D.shader){
+//        console.log("Loading Shader File: " + object3D.shader);
+        shaderVert = Ayce.XMLLoader.getSourceSynch(object3D.shader + ".vert");
+        shaderFrag = Ayce.XMLLoader.getSourceSynch(object3D.shader + ".frag");
+        shaderID = "A"+object3D.shader;
+        if(object3D.logVertexShader) console.log(shaderVert);
+        if(object3D.logFragmentShader) console.log(shaderFrag);
+    }else{
+        var shaderGenerator = new Ayce.ShaderGenerator();
+        
+        if(useLighting){
+            shaderGenerator.useVertexLighting = Boolean(object3D.normals &amp;&amp; !object3D.useFragmentLighting);
+            shaderGenerator.lightsCount = lightContainer.lightsCount;
+            shaderGenerator.useFragmentLighting = Boolean(object3D.normals &amp;&amp; object3D.useFragmentLighting);
+            shaderGenerator.useSpecularLighting = object3D.useSpecularLighting;
+        }
+        shaderGenerator.useNormals = useNormals;
+        shaderGenerator.useColor = Boolean(object3D.colors);
+        
+        shaderGenerator.texturesCount = Array.isArray(object3D.imageSrc) ? object3D.imageSrc.length : 1;
+        shaderGenerator.useTexture = Boolean(object3D.imageSrc &amp;&amp; object3D.textureCoords);
+        shaderGenerator.useSpecularMap = Boolean(object3D.specularMap &amp;&amp; object3D.useSpecularLighting);
+        shaderGenerator.useNormalMap = Boolean(object3D.normalMap);
+        
+        shaderGenerator.isParticleSystem = isParticleSystem;
+        
+        shaderGenerator.init();
+        shaderVert = shaderGenerator.vertexShader;
+        shaderFrag = shaderGenerator.fragmentShader;
+
+        shaderID = "B"+shaderGenerator.useNormals+shaderGenerator.lightsCount+shaderGenerator.texturesCount+
+            shaderGenerator.useVertexLighting+shaderGenerator.useFragmentLighting+
+            shaderGenerator.useTexture+shaderGenerator.useColor+shaderGenerator.useSpecularMap+
+            shaderGenerator.useNormalMap+shaderGenerator.isParticleSystem;
+
+        if(object3D.logVertexShader) console.log(shaderVert.replace(/;/g, ";\n").replace(/{/g, "{\n").replace(/}/g, "}\n"));
+        if(object3D.logFragmentShader) console.log(shaderFrag.replace(/;/g, ";\n").replace(/{/g, "{\n").replace(/}/g, "}\n"));
+    }
+
+    var shader = null;
+    if(gl.shaders[shaderID]){
+        shader = gl.shaders[shaderID];
+    }
+    else{
+        shader = new Ayce.Shader(gl, shaderVert, shaderFrag);
+        gl.shaders[shaderID] = shader;
+    }
+
+    //Create Buffer
+    var drawMode = useWireframe ? gl.LINES : undefined;
+    var buffer = new Ayce.Buffer(gl, object3D, shader, attributes, uniforms, drawMode);
+    if(object3D.twoFaceTransparency) {
+        var indices = object3D.indices;
+        indices = indices.slice().reverse().concat(indices);
+        buffer.indices = new Uint16Array(indices);
+    }
+    else{
+        buffer.indices = new Uint16Array(object3D.indices);
+    }
+    buffer.useTexture = Boolean(object3D.textureCoords &amp;&amp; object3D.imageSrc);
+    buffer.useSpecularMap = Boolean(object3D.textureCoords &amp;&amp; object3D.specularMap);
+    buffer.useNormalMap = Boolean(object3D.textureCoords &amp;&amp; object3D.normalMap);
+    buffer.useTransparency = object3D.transparent;
+    buffer.texturesO3D = (Array.isArray(object3D.imageSrc)) ? object3D.imageSrc : [object3D.imageSrc];
+    buffer.isSkybox = Boolean(object3D.isSkybox);
+
+    buffer.init();
+
+    /*********************************************
+     *
+     *      Render function
+     *
+     *********************************************/
+
+    var copyMatrix = new Ayce.Matrix4();
+    /**
+     * Updates perspective Matrix
+     * @param {Ayce.Camera} camera
+     */
+    this.update = function (camera) {
+        //Create ModelViewMatrix
+        Ayce.Matrix4.prototype.copyToMatrix(object3D.modelMatrix, modelViewMatrix);
+        modelViewMatrix.apply(camera.getViewMatrix());
+        
+        Ayce.Matrix4.prototype.copyToMatrix(modelViewMatrix, copyMatrix);
+        copyMatrix.invert();
+        copyMatrix.transpose();
+        copyMatrix.getMatrix3(uniformValues.normalMatrix);
+
+        pMatrixUniform.data = camera.getPerspectiveMatrix().data;
+        timeObject = Date.now()-timeObject.startTime;
+
+        buffer.update();
+    };
+
+    /**
+     * Renders buffer
+     */
+    this.render = function(){
+        if(!object3D.visible)return;
+        buffer.render();
+    };
+
+    /**
+     * Updates VR perspective Matrices
+     * @param {Ayce.Camera} camera
+     */
+    this.updateVR = function(camera){
+        //Create ModelViewMatrix Left eye
+        Ayce.Matrix4.prototype.copyToMatrix(object3D.modelMatrix, leftMatrix);
+        leftMatrix.apply(camera.getViewMatrix("left"));
+
+        Ayce.Matrix4.prototype.copyToMatrix(leftMatrix, copyMatrix);
+        copyMatrix.invert();
+        copyMatrix.transpose();
+        copyMatrix.getMatrix3(leftNormalMatrix);
+
+        //Create ModelViewMatrix Right eye
+        Ayce.Matrix4.prototype.copyToMatrix(object3D.modelMatrix, rightMatrix);
+        rightMatrix.apply(camera.getViewMatrix("right"));
+
+        Ayce.Matrix4.prototype.copyToMatrix(rightMatrix, copyMatrix);
+        copyMatrix.invert();
+        copyMatrix.transpose();
+        copyMatrix.getMatrix3(rightNormalMatrix);
+
+        //Set Perspektive Matrix
+        leftPerspektive = camera.getPerspectiveMatrix("left");
+        rightPerspektive = camera.getPerspectiveMatrix("right");
+
+        //Update Buffer
+        buffer.update();
+    };
+
+    /**
+     * Renders VR buffers
+     * @param {String} eye
+     */
+    this.renderVR = function(eye){
+        if(!object3D.visible)return;
+        if(eye === "left"){
+            modelViewMatrix.data = leftMatrix.data;
+            uniformValues.normalMatrix.data = leftNormalMatrix.data;
+            pMatrixUniform.data = leftPerspektive.data;
+            lightContainer.locationsArray = lightContainer.locationsArrayLeftEye;
+        }
+        else if(eye === "right"){
+            modelViewMatrix.data = rightMatrix.data;
+            uniformValues.normalMatrix.data = rightNormalMatrix.data;
+            pMatrixUniform.data = rightPerspektive.data;
+            lightContainer.locationsArray = lightContainer.locationsArrayRightEye;
+        }
+        buffer.render();
+    };
+    
+    this.dispose = function(){
+        buffer.dispose();
+    };
+};
+
+Ayce.BufferMulti.prototype = {
+    
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><div class='coll_folder' onclick="collapse(document.querySelector('#l_s'))">&gt; Stage</div><div class='sub_fol' id='l_s' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_sba'))">&gt; Buffer</div><div class='sub_fol' id='l_sba' style='display: none;'><div><a href="Ayce.Buffer.html">Buffer</a></div><div><a href="Ayce.BufferMulti.html">BufferMulti</a></div><div><a href="Ayce.Shader.html">Shader</a></div><div><a href="Ayce.ShaderGenerator.html">ShaderGenerator</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sca'))">&gt; Camera</div><div class='sub_fol' id='l_sca' style='display: none;'><div><a href="Ayce.Camera.html">Camera</a></div><div><a href="Ayce.CameraManager.html">CameraManager</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_scca'))">&gt; CameraModifiers</div><div class='sub_fol' id='l_scca' style='display: none;'><div><a href="Ayce.CameraModifier.html">CameraModifier</a></div><div><a href="Ayce.Cardboard.html">Cardboard</a></div><div><a href="Ayce.Gamepad.html">Gamepad</a></div><div><a href="Ayce.MouseKeyboard.html">MouseKeyboard</a></div><div><a href="Ayce.WebVR.html">WebVR</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sra'))">&gt; Renderer</div><div class='sub_fol' id='l_sra' style='display: none;'><div><a href="Ayce.Renderer.html">Renderer</a></div><div><a href="Ayce.VRRenderer.html">VRRenderer</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ssa'))">&gt; Sound</div><div class='sub_fol' id='l_ssa' style='display: none;'><div><a href="Ayce.Sound.html">Sound</a></div></div><div><div><a href="Ayce.Light.html">Light</a></div><div><a href="Ayce.LightContainer.html">LightContainer</a></div><div><a href="Ayce.Scene.html">Scene</a></div><div><a href="Ayce.Timer.html">Timer</a></div><div><a href="Ayce.XMLLoader.html">XMLLoader</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_o'))">&gt; Objects</div><div class='sub_fol' id='l_o' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_ola'))">&gt; Loader</div><div class='sub_fol' id='l_ola' style='display: none;'><div><a href="Ayce.OBJLoader.html">OBJLoader</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ota'))">&gt; Types</div><div class='sub_fol' id='l_ota' style='display: none;'><div><a href="Ayce.Particle.html">Particle</a></div><div><a href="Ayce.ParticleSystem.html">ParticleSystem</a></div><div><a href="Ayce.Skybox.html">Skybox</a></div><div><a href="Ayce.VRSquare.html">VRSquare</a></div></div><div><div><a href="Ayce.Object3D.html">Object3D</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ia'))">&gt; InputHandlers</div><div class='sub_fol' id='l_ia' style='display: none;'><div><a href="Ayce.GamepadHandler.html">GamepadHandler</a></div><div><a href="Ayce.HMDHandler.html">HMDHandler</a></div><div><a href="Ayce.KeyboardHandler.html">KeyboardHandler</a></div><div><a href="Ayce.MouseHandler.html">MouseHandler</a></div><div><a href="Ayce.SensorsHandler.html">SensorsHandler</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ma'))">&gt; Math</div><div class='sub_fol' id='l_ma' style='display: none;'><div><a href="Ayce.Geometry.html">Geometry</a></div><div><a href="Ayce.Geometry.Box.html">Box</a></div><div><a href="Ayce.Geometry.Icosahedron.html">Icosahedron</a></div><div><a href="Ayce.Geometry.Plane.html">Plane</a></div><div><a href="Ayce.Geometry.Sphere.html">Sphere</a></div><div><a href="Ayce.Matrix3.html">Matrix3</a></div><div><a href="Ayce.Matrix4.html">Matrix4</a></div><div><a href="Ayce.Quaternion.html">Quaternion</a></div><div><a href="Ayce.Vector2.html">Vector2</a></div><div><a href="Ayce.Vector3.html">Vector3</a></div></div>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Dec 15 2015 21:25:42 GMT+0100 (Mitteleuropäische Zeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

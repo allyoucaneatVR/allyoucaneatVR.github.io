@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: objects/types/Skybox.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/code.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/sidenav.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: objects/types/Skybox.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Creates new skybox object
+ * @param front
+ * @param back
+ * @param top
+ * @param bottom
+ * @param right
+ * @param left
+ * @param prefix
+ * @param camera
+ * @param farPlane
+ * @class
+ * @constructor
+ */
+Ayce.Skybox = function (front, back, top, bottom, right, left, prefix, camera, farPlane) {
+
+    this.isSkybox = true;
+    this.imageSrc = [prefix+front, prefix+back, prefix+top, prefix+bottom, prefix+right, prefix+left];
+    this.parent = camera;
+    this.parentRotationWeight = new Ayce.Vector3(0.0,0.0,0.0);
+    this.parentPositionWeight = new Ayce.Vector3(1.0,1.0,1.0);
+    var scale = (farPlane*2)/Math.sqrt(3);
+    this.scale = new Ayce.Vector3(
+        scale,
+        scale,
+        scale);
+
+    this.vertices = [
+        // Front face
+        -0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        0.5, 0.5, 0.5,
+        -0.5, 0.5, 0.5,
+
+        // Back face
+        -0.5, -0.5, -0.5,
+        -0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, -0.5, -0.5,
+
+        // Top face
+        -0.5, 0.5, -0.5,
+        -0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5,
+        0.5, 0.5, -0.5,
+
+        // Bottom face
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, 0.5,
+        -0.5, -0.5, 0.5,
+
+        // Right face
+        0.5, -0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, 0.5, 0.5,
+        0.5, -0.5, 0.5,
+
+        // Left face
+        -0.5, -0.5, 0.5,
+        -0.5, 0.5, 0.5,
+        -0.5, 0.5, -0.5,
+        -0.5, -0.5, -0.5
+    ];
+    this.textureCoords = [
+
+        // Front face
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
+
+        // Back face
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0,
+
+        // Top face
+        0.0, 1.0,
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0,
+
+        // Bottom face
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0,
+        1.0, 0.0,
+
+        // Right face
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0,
+
+        // Left face
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0
+    ];
+
+    this.textureIndices = [
+        0, 0, 0, 0,
+        1, 1, 1, 1,
+        2, 2, 2, 2,
+        3, 3, 3, 3,
+        4, 4, 4, 4,
+        5, 5, 5, 5
+    ];
+
+    this.normals = null;
+
+    this.indices = [
+        0, 1, 2, 0, 2, 3, // Front face
+        4, 5, 6, 4, 6, 7, // Back face
+        8, 9, 10, 8, 10, 11, // Top face
+        12, 13, 14, 12, 14, 15, // Bottom face
+        16, 17, 18, 16, 18, 19, // Right face
+        20, 21, 22, 20, 22, 23 // Left face
+    ];
+    this.indices.reverse();
+
+    this.calcBoundingBox();
+};
+
+Ayce.Skybox.prototype = new Ayce.Object3D();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><div class='coll_folder' onclick="collapse(document.querySelector('#l_s'))">&gt; Stage</div><div class='sub_fol' id='l_s' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_sba'))">&gt; Buffer</div><div class='sub_fol' id='l_sba' style='display: none;'><div><a href="Ayce.Buffer.html">Buffer</a></div><div><a href="Ayce.BufferMulti.html">BufferMulti</a></div><div><a href="Ayce.Shader.html">Shader</a></div><div><a href="Ayce.ShaderGenerator.html">ShaderGenerator</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sca'))">&gt; Camera</div><div class='sub_fol' id='l_sca' style='display: none;'><div><a href="Ayce.Camera.html">Camera</a></div><div><a href="Ayce.CameraManager.html">CameraManager</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_scca'))">&gt; CameraModifiers</div><div class='sub_fol' id='l_scca' style='display: none;'><div><a href="Ayce.CameraModifier.html">CameraModifier</a></div><div><a href="Ayce.Cardboard.html">Cardboard</a></div><div><a href="Ayce.Gamepad.html">Gamepad</a></div><div><a href="Ayce.MouseKeyboard.html">MouseKeyboard</a></div><div><a href="Ayce.WebVR.html">WebVR</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sra'))">&gt; Renderer</div><div class='sub_fol' id='l_sra' style='display: none;'><div><a href="Ayce.Renderer.html">Renderer</a></div><div><a href="Ayce.VRRenderer.html">VRRenderer</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ssa'))">&gt; Sound</div><div class='sub_fol' id='l_ssa' style='display: none;'><div><a href="Ayce.Sound.html">Sound</a></div></div><div><div><a href="Ayce.Light.html">Light</a></div><div><a href="Ayce.LightContainer.html">LightContainer</a></div><div><a href="Ayce.Scene.html">Scene</a></div><div><a href="Ayce.Timer.html">Timer</a></div><div><a href="Ayce.XMLLoader.html">XMLLoader</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_o'))">&gt; Objects</div><div class='sub_fol' id='l_o' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_ola'))">&gt; Loader</div><div class='sub_fol' id='l_ola' style='display: none;'><div><a href="Ayce.OBJLoader.html">OBJLoader</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ota'))">&gt; Types</div><div class='sub_fol' id='l_ota' style='display: none;'><div><a href="Ayce.Particle.html">Particle</a></div><div><a href="Ayce.ParticleSystem.html">ParticleSystem</a></div><div><a href="Ayce.Skybox.html">Skybox</a></div><div><a href="Ayce.VRSquare.html">VRSquare</a></div></div><div><div><a href="Ayce.Object3D.html">Object3D</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ia'))">&gt; InputHandlers</div><div class='sub_fol' id='l_ia' style='display: none;'><div><a href="Ayce.GamepadHandler.html">GamepadHandler</a></div><div><a href="Ayce.HMDHandler.html">HMDHandler</a></div><div><a href="Ayce.KeyboardHandler.html">KeyboardHandler</a></div><div><a href="Ayce.MouseHandler.html">MouseHandler</a></div><div><a href="Ayce.SensorsHandler.html">SensorsHandler</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ma'))">&gt; Math</div><div class='sub_fol' id='l_ma' style='display: none;'><div><a href="Ayce.Geometry.html">Geometry</a></div><div><a href="Ayce.Geometry.Box.html">Box</a></div><div><a href="Ayce.Geometry.Icosahedron.html">Icosahedron</a></div><div><a href="Ayce.Geometry.Plane.html">Plane</a></div><div><a href="Ayce.Geometry.Sphere.html">Sphere</a></div><div><a href="Ayce.Matrix3.html">Matrix3</a></div><div><a href="Ayce.Matrix4.html">Matrix4</a></div><div><a href="Ayce.Quaternion.html">Quaternion</a></div><div><a href="Ayce.Vector2.html">Vector2</a></div><div><a href="Ayce.Vector3.html">Vector3</a></div></div>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Dec 15 2015 21:25:43 GMT+0100 (Mitteleuropäische Zeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

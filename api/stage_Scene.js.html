@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stage/Scene.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/code.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link type="text/css" rel="stylesheet" href="styles/sidenav.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stage/Scene.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*jslint browser: true*/
+/*globals Ayce*/
+
+/**
+ * Creates a new scene
+ * @class
+ * @param canvas
+ * @constructor
+ */
+Ayce.Scene = function (canvas) {
+    var scope = this;
+    var i = 0;
+    var recalcBuffers = true;
+    var camera = new Ayce.Camera(new Ayce.CameraManager());
+    var audioContext = new Ayce.AudioContext();
+    var renderer = null;
+    var keyboardHandler = new Ayce.KeyboardHandler();
+    
+    this.render = true;
+    this.width = canvas.parentNode.clientWidth;
+    this.height = canvas.parentNode.clientHeight;
+
+    var objects = [];
+    var transparentObjects = [];
+    var lightContainer = new Ayce.LightContainer();
+    var sounds = [];
+
+//////////////////////////////////////////////////////////////////////////////////////
+//Scene initialization
+
+    /**
+     * Should be called on window resize
+     */
+    this.resize = function () {
+        this.width = canvas.parentNode.clientWidth;
+        this.height = canvas.parentNode.clientHeight;
+        renderer.width = this.width;
+        renderer.height = this.height;
+        renderer.resize();
+        camera.width = renderer.getCanvasWidth();
+        camera.height = renderer.getCanvasHeight();
+        camera.updateProjectionMatrix();
+    };
+
+    /**
+     * Returns true if WebVR compatible browser is being used
+     * @returns {Boolean} isWebVR
+     */
+    this.useWebVR = function(){
+        var m = camera.getManager().modifiers;
+        if(m &amp;&amp; m.length > 0)throw "Camera modifiers not empty. Please call camera.getManager().clearModifiers() first.";
+        
+        if(Ayce.HMDHandler.isWebVRReady()){
+            var cameraController = camera.getManager();
+            cameraController.modifiers.push(new Ayce.WebVR());
+            camera.update();
+            this.setRenderer(new Ayce.VRRenderer(canvas, false, cameraController));
+            camera.useVR = true;
+        }
+        else{
+            console.warn("Browser dosen't support WebVR.");
+            return false;
+        }
+        return true;
+    };
+
+    /**
+     * Call for VR rendering for Google Cardboard (and similar viewers). Parameter used to toggle barrel distortion and color abberation on and off.
+     * @param {Boolean} distorted
+     */
+    this.useCardboard = function(distorted){
+        this.useMotionSensor();
+        this.setRendererVR(distorted);
+        camera.useVR = true;
+        this.resize();
+    };
+
+    /**
+     * Sets up motion sensors as input for Google Cardboard (and similar viewers).
+     */
+    this.useMotionSensor = function(){
+        var m = camera.getManager().modifiers;
+        if(m &amp;&amp; m.length > 0)throw "Camera modifiers not empty. Please call camera.getManager().clearModifiers() first.";
+        m.push(new Ayce.Cardboard());
+    };
+
+    /**
+     * Sets up rendering for desktop browsers
+     */
+    this.setRendererDesktop = function(){
+        this.setRenderer(new Ayce.Renderer(canvas));
+        camera.useVR = false;
+        this.resize();
+    };
+
+    /**
+     * Sets up rendering for VR on mobile browsers
+     * @param {Boolean} distorted
+     */
+    this.setRendererVR = function(distorted){
+        this.setRenderer(new Ayce.VRRenderer(canvas, distorted));
+        camera.useVR = true;
+        this.resize();
+    };
+
+    /**
+     * Sets current renderer
+     * @param {Ayce.Renderer} rendererObject
+     */
+    this.setRenderer = function(rendererObject){
+        var shaders = null;
+        if(renderer){
+            rendererObject.clearColor = renderer.clearColor;
+            shaders = renderer.getGL().shaders;
+        }
+        
+        renderer = rendererObject;
+        renderer.width = this.width;
+        renderer.height = this.height;
+        renderer.init();
+        canvas.style.width = "auto";
+        canvas.style.height = "auto";
+        
+        if(shaders){
+            renderer.getGL().shaders = shaders;
+        }
+    };
+
+    /**
+     * Removes current renderer
+     */
+    this.setRendererNull = function(){
+        renderer = null;
+    };
+
+    //setup scene
+    this.setRendererDesktop();
+    
+    if(window.attachEvent) {
+        window.attachEvent('onresize', this.resize);
+    }
+    else if(window.addEventListener) {
+        window.addEventListener('resize', this.resize, true);
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////
+//Scene Management
+    
+    /**
+     * Updates input, camera, lights, objects, renderer and sound
+     */
+    this.updateScene = function () {
+        if(recalcBuffers){
+            calcO3DBuffers(objects);
+            calcO3DBuffers(transparentObjects);
+            recalcBuffers = false;
+        }
+        
+        //update keyboard inputHandlers
+        keyboardHandler.update();
+        
+        //update camera
+        camera.update();
+        
+        //update lights
+        lightContainer.update(camera);
+        
+        //update objects
+        for(i=0; i &lt; objects.length; i++){
+            objects[i].update();
+        }
+        for(i=0; i &lt; transparentObjects.length; i++){
+            transparentObjects[i].update();
+        }
+        renderer.update(camera, objects, transparentObjects);
+        
+        //update sounds
+        for(i=0;i&lt;sounds.length;i++){
+            //sounds[i].listener = camera.getControls().position;
+            sounds[i].listenerPosition = camera.getManager().getGlobalPosition();
+            var orientation = camera.getManager().getGlobalRotation();
+            var fwVector = orientation.getForwardVector();
+            var upVector = orientation.getUpVector();
+            sounds[i].listenerOrientationFront.x = fwVector.x;
+            sounds[i].listenerOrientationFront.y = fwVector.y;
+            sounds[i].listenerOrientationFront.z = fwVector.z;
+            sounds[i].listenerOrientationUp.x = upVector.x;
+            sounds[i].listenerOrientationUp.y = upVector.y;
+            sounds[i].listenerOrientationUp.z = upVector.z;
+            sounds[i].update();
+        }
+    };
+
+    /**
+     * Draws objects that have been added to the scene
+     */
+    this.drawScene = function () {
+        if(this.render &amp;&amp; ! recalcBuffers) {
+            // Sort transparent objects for rendering
+            var highestDistance = 0;
+            for (var i = 0; i &lt; transparentObjects.length; i++) {
+                if (!transparentObjects[i].renderPriority) {     // Sort by distance to camera
+                    var position = transparentObjects[i].getGlobalPosition();
+                    var cc = camera.getManager();
+
+                    transparentObjects[i].distance = Math.sqrt(
+                        Math.pow(cc.getGlobalPosition().x - position.x, 2) +
+                        Math.pow(cc.getGlobalPosition().y - position.y, 2) +
+                        Math.pow(cc.getGlobalPosition().z - position.z, 2)
+                    );
+
+                    if (transparentObjects[i].distance > highestDistance) highestDistance = transparentObjects[i].distance;
+                }
+            }
+            for (i = 0; i &lt; transparentObjects.length; i++) {       // Sort by priority if available
+                if (transparentObjects[i].renderPriority) {
+                    if (transparentObjects[i].renderPriority > 0) {
+                        transparentObjects[i].distance = highestDistance + transparentObjects[i].renderPriority;
+                    } else {
+                        transparentObjects[i].distance = transparentObjects[i].renderPriority;
+                    }
+                }
+            }
+
+            transparentObjects.sort(function (a, b) {
+                return b.distance - a.distance;
+            });
+
+            //render scene
+            renderer.render(camera, objects, transparentObjects);
+        }
+    };
+    
+    var calcO3DBuffers = function(o3DArray){
+        for(i=0; i &lt; o3DArray.length; i++){
+            if(o3DArray[i].buffer){
+                o3DArray[i].buffer.dispose();
+            }
+            o3DArray[i].buffer = renderer.getBuffer(o3DArray[i], lightContainer);
+        }
+    };
+
+    /**
+     * Adds light, object or sound to scene
+     * @param {Ayce.Light|Ayce.Object3D|Ayce.Sound} object
+     */
+    this.addToScene = function (object) {
+        
+        //Add Light to Scene
+        if (object instanceof Ayce.Light) {
+            lightContainer.addLight(object);
+            recalcBuffers = true;
+        }
+        
+        //Add O3D to Scene
+        else if (object instanceof Ayce.Object3D) {
+            if(!recalcBuffers){
+                object.buffer = renderer.getBuffer(object, lightContainer);
+            }
+            object.calcBoundingBox();
+            object.calcBoundingSphere();
+
+            if(object.transparent){
+                transparentObjects.push(object);
+            }
+            else{
+                objects.push(object);
+            }
+            
+        }
+        
+        //Add Sound
+        else if(object instanceof Ayce.Sound){
+            object.init(audioContext);
+            sounds.push(object);
+        }
+        
+        //Unknown Object
+        else {
+            throw "Can't add to scene. Unknown type: " + typeof object;
+        }
+    };
+
+    /**
+     * Removes light, object or sound from scene
+     * @param {Ayce.Light|Ayce.Object3D|Ayce.Sound} object
+     */
+    this.removeFromScene = function (object) {
+        //Remove Light from Scene
+        if (object instanceof Ayce.Light) {
+            lightContainer.removeLight(object);
+        }
+        //Remove o3D from Scene
+        else if (object instanceof Ayce.Object3D) {
+            for (i=0; i &lt; objects.length; i++) {
+                if (objects[i] === object) {
+                    objects.splice(i, 1);
+                }
+            }
+            for (i=0; i &lt; transparentObjects.length; i++) {
+                if (transparentObjects[i] === object) {
+                    transparentObjects.splice(i, 1);
+                }
+            }
+        }
+        else if(object instanceof Ayce.Sound){
+            for (i=0; i &lt; sounds.length; i++) {
+                if (sounds[i] === object) {
+                    sounds[i].stop();
+                    sounds.splice(i, 1);
+                }
+            }
+        }
+        else {
+            throw "Can't remove from scene: " + typeof object;
+        }
+    };
+    
+///////////////////////////////////////////////////////////////////////////////////////
+//Getter / Setter
+
+    /**
+     * Returns camera object
+     * @returns {Ayce.Camera} camera
+     */
+    this.getCamera = function () {
+        return camera;
+    };
+    
+    this.setClearColor = function(red, green, blue){
+        renderer.clearColor.red = red;
+        renderer.clearColor.green = green;
+        renderer.clearColor.blue = blue;
+        renderer.getGL().clearColor(red, green, blue, 1.0);
+    };
+    
+    this.setAmbientLight = function(red, green, blue){
+        lightContainer.ambientLight.red = red;
+        lightContainer.ambientLight.green = green;
+        lightContainer.ambientLight.blue = blue;
+    };
+
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><div class='coll_folder' onclick="collapse(document.querySelector('#l_s'))">&gt; Stage</div><div class='sub_fol' id='l_s' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_sba'))">&gt; Buffer</div><div class='sub_fol' id='l_sba' style='display: none;'><div><a href="Ayce.Buffer.html">Buffer</a></div><div><a href="Ayce.BufferMulti.html">BufferMulti</a></div><div><a href="Ayce.Shader.html">Shader</a></div><div><a href="Ayce.ShaderGenerator.html">ShaderGenerator</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sca'))">&gt; Camera</div><div class='sub_fol' id='l_sca' style='display: none;'><div><a href="Ayce.Camera.html">Camera</a></div><div><a href="Ayce.CameraManager.html">CameraManager</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_scca'))">&gt; CameraModifiers</div><div class='sub_fol' id='l_scca' style='display: none;'><div><a href="Ayce.CameraModifier.html">CameraModifier</a></div><div><a href="Ayce.Cardboard.html">Cardboard</a></div><div><a href="Ayce.Gamepad.html">Gamepad</a></div><div><a href="Ayce.MouseKeyboard.html">MouseKeyboard</a></div><div><a href="Ayce.WebVR.html">WebVR</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_sra'))">&gt; Renderer</div><div class='sub_fol' id='l_sra' style='display: none;'><div><a href="Ayce.Renderer.html">Renderer</a></div><div><a href="Ayce.VRRenderer.html">VRRenderer</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ssa'))">&gt; Sound</div><div class='sub_fol' id='l_ssa' style='display: none;'><div><a href="Ayce.Sound.html">Sound</a></div></div><div><div><a href="Ayce.Light.html">Light</a></div><div><a href="Ayce.LightContainer.html">LightContainer</a></div><div><a href="Ayce.Scene.html">Scene</a></div><div><a href="Ayce.Timer.html">Timer</a></div><div><a href="Ayce.XMLLoader.html">XMLLoader</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_o'))">&gt; Objects</div><div class='sub_fol' id='l_o' style='display: none;'><div class='coll_folder' onclick="collapse(document.querySelector('#l_ola'))">&gt; Loader</div><div class='sub_fol' id='l_ola' style='display: none;'><div><a href="Ayce.OBJLoader.html">OBJLoader</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ota'))">&gt; Types</div><div class='sub_fol' id='l_ota' style='display: none;'><div><a href="Ayce.Particle.html">Particle</a></div><div><a href="Ayce.ParticleSystem.html">ParticleSystem</a></div><div><a href="Ayce.Skybox.html">Skybox</a></div><div><a href="Ayce.VRSquare.html">VRSquare</a></div></div><div><div><a href="Ayce.Object3D.html">Object3D</a></div></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ia'))">&gt; InputHandlers</div><div class='sub_fol' id='l_ia' style='display: none;'><div><a href="Ayce.GamepadHandler.html">GamepadHandler</a></div><div><a href="Ayce.HMDHandler.html">HMDHandler</a></div><div><a href="Ayce.KeyboardHandler.html">KeyboardHandler</a></div><div><a href="Ayce.MouseHandler.html">MouseHandler</a></div><div><a href="Ayce.SensorsHandler.html">SensorsHandler</a></div></div><div class='coll_folder' onclick="collapse(document.querySelector('#l_ma'))">&gt; Math</div><div class='sub_fol' id='l_ma' style='display: none;'><div><a href="Ayce.Geometry.html">Geometry</a></div><div><a href="Ayce.Geometry.Box.html">Box</a></div><div><a href="Ayce.Geometry.Icosahedron.html">Icosahedron</a></div><div><a href="Ayce.Geometry.Plane.html">Plane</a></div><div><a href="Ayce.Geometry.Sphere.html">Sphere</a></div><div><a href="Ayce.Matrix3.html">Matrix3</a></div><div><a href="Ayce.Matrix4.html">Matrix4</a></div><div><a href="Ayce.Quaternion.html">Quaternion</a></div><div><a href="Ayce.Vector2.html">Vector2</a></div><div><a href="Ayce.Vector3.html">Vector3</a></div></div>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Dec 15 2015 21:25:43 GMT+0100 (Mitteleuropäische Zeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
