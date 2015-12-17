@@ -1,3 +1,6 @@
 .sub_fol{
-    margin-left: 1em;
+    padding-left: 0.5em;
+    border-left-style: solid;
+    border-width: 1px;
+    border-color: gainsboro;
 }
